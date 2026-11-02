@@ -238,10 +238,12 @@ class TestScripts(unittest.TestCase):
         self.assertEqual([p.text for p in Document(self.d / "q.docx").paragraphs],
                          ["QCM", "Question 1", "Énoncé", "A. Un", "B. Deux"])
 
-    def test_exemple_du_depot_est_coherent(self):
-        exemple = Path(__file__).resolve().parent.parent / "exemples" / "photosynthese"
-        r = lancer("controler.py", str(exemple), dossier=self.d)
-        self.assertEqual(r.returncode, 0, r.stdout)
+    def test_exemples_du_depot_sont_coherents(self):
+        exemples = Path(__file__).resolve().parent.parent / "exemples"
+        for exemple in ("photosynthese", "systemes-agentiques"):
+            with self.subTest(exemple):
+                r = lancer("controler.py", str(exemples / exemple), dossier=self.d)
+                self.assertEqual(r.returncode, 0, r.stdout)
 
     def test_version_invalide_refusee(self):
         (self.d / "a.txt").write_text("x", encoding="utf-8")

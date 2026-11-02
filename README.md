@@ -37,7 +37,10 @@ Le contrôle de cohérence vérifie notamment que le temps de chaque séance cor
 
 Si le cours ne tient pas dans les heures prévues, le plugin vous propose quoi condenser ou passer en travail personnel. Il ne supprime rien sans votre accord.
 
-Un exemple complet en deux séances se trouve dans [`exemples/photosynthese`](exemples/photosynthese), par exemple avec les [diapos](exemples/photosynthese/seance-1/diapos.pptx) et le [QCM](exemples/photosynthese/seance-1/qcm.docx) de la séance 1.
+Deux exemples montrent le format des fichiers produits. Ils ont été écrits à la main en suivant les consignes du plugin, et ne sont donc pas des sorties réelles de ses agents :
+
+- [`exemples/photosynthese`](exemples/photosynthese) : 2 séances de 55 min en 5e, avec par exemple les [diapos](exemples/photosynthese/seance-1/diapos.pptx) et le [QCM](exemples/photosynthese/seance-1/qcm.docx) de la séance 1.
+- [`exemples/systemes-agentiques`](exemples/systemes-agentiques) : un faux cours en licence 3 informatique, de 6 h en 3 séances de 2 h, à partir d'un [cours Word](exemples/systemes-agentiques/cours-source.docx).
 
 ## Installation
 
