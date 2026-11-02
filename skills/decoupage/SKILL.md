@@ -10,7 +10,7 @@ Le découpage horaire vient du prof : tu l'appliques exactement et tu adaptes le
 
 ## Écrire `.travail/objectifs.md`
 
-Travaille dans le dossier du chapitre, créé avec le skill `organiser`. Lis tout le cours source dans `Cours/`. Si le prof n'a pas donné le niveau, la matière, le volume horaire et la durée de chaque séance, demande-les. Déduis le niveau ou la matière du cours seulement pour les lui proposer. Lis ensuite `${CLAUDE_PLUGIN_ROOT}/references/niveaux.md` et le fichier de sa matière dans `${CLAUDE_PLUGIN_ROOT}/references/matieres/` (`autres.md` s'il n'y en a pas). Écris alors :
+Travaille dans le dossier du chapitre, créé avec le skill `organiser`. Si `redaction.py etat` indique un cours en rédaction ou modifié depuis sa validation, arrête-toi et renvoie au skill `rediger`. Lis tout le cours source dans `Cours/`, sans `Cours/Sources` : seul le cours validé fait référence. Si le prof n'a pas donné le niveau, la matière, le volume horaire et la durée de chaque séance, demande-les. Déduis le niveau ou la matière du cours seulement pour les lui proposer. Lis ensuite `${CLAUDE_PLUGIN_ROOT}/references/niveaux.md` et le fichier de sa matière dans `${CLAUDE_PLUGIN_ROOT}/references/matieres/` (`autres.md` s'il n'y en a pas). Écris alors :
 
 ```markdown
 # Objectifs : titre du cours

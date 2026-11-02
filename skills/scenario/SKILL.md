@@ -6,7 +6,7 @@ argument-hint: "[numéro de séance]"
 
 # Écrire le scénario d'une séance
 
-Travaille dans le dossier du chapitre. Lis le cours source dans `Cours/` et `.travail/objectifs.md`. Lis aussi `${CLAUDE_PLUGIN_ROOT}/references/niveaux.md` et le fichier de la matière dans `${CLAUDE_PLUGIN_ROOT}/references/matieres/` (`autres.md` s'il n'y en a pas), et applique-les. Écris ensuite `.travail/seance-N/scenario.md` pour la séance demandée :
+Travaille dans le dossier du chapitre. Lis le cours source dans `Cours/`, sans `Cours/Sources`, et `.travail/objectifs.md`. Lis aussi `${CLAUDE_PLUGIN_ROOT}/references/niveaux.md` et le fichier de la matière dans `${CLAUDE_PLUGIN_ROOT}/references/matieres/` (`autres.md` s'il n'y en a pas), et applique-les. Écris ensuite `.travail/seance-N/scenario.md` pour la séance demandée :
 
 ```markdown
 # Séance 1 : titre

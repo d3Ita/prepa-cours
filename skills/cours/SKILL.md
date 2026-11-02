@@ -19,7 +19,9 @@ Si Python ou Git manque, explique simplement au prof quoi installer et arrête-t
 ## Étapes
 
 1. **Trouver le chapitre** avec le skill `organiser` : montre ce qui existe déjà, demande le niveau, la classe et le titre du chapitre s'ils manquent, puis crée le chapitre. Si le chapitre existe déjà, reprends-le sans rien écraser. Travaille ensuite dans ce dossier et indique son chemin à chaque agent.
-2. **Ranger le cours du prof** dans `Cours/` : copie-le avec `organiser.py ranger`, sans jamais déplacer l'original. Si plusieurs documents sont possibles, demande lequel utiliser.
+2. **Obtenir le cours.** Lance `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/redaction.py" etat` et demande au prof, si ce n'est pas clair, s'il a un cours terminé ou des documents à transformer en cours :
+   - **Des documents à transformer, ou une rédaction en cours :** suis le skill `rediger`, avec sa longue période de révision. **Ne passe à l'étape 3 qu'avec le statut `VALIDEE`.**
+   - **Un cours terminé :** copie-le dans `Cours/` avec `organiser.py ranger`, sans jamais déplacer l'original. Si plusieurs documents sont possibles, demande lequel utiliser.
 3. **Sauvegarder l'existant** avec le message « État initial ».
 4. **Lire le cours et découper** avec le skill `decoupage` : le prof indique la matière, les heures et les séances, et tu écris `.travail/objectifs.md`. Passe la **boucle de qualité** avec l'étape `decoupage`. **Arrête-toi tant qu'il n'a pas validé le découpage.**
 5. **Lancer l'agent `scenariste` pour chaque séance**, en indiquant son numéro, puis passe la **boucle de qualité** avec l'étape `scenarios`. Indique les fichiers `Cours/seance-N-scenario.docx` à ouvrir. **Arrête-toi tant que le prof n'a pas validé les scénarios.**

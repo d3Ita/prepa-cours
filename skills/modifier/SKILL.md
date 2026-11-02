@@ -19,5 +19,6 @@ Sous Windows, remplace `python3` par `python` si besoin.
 
 ## Limites
 
-- Ce skill remplace du texte. Pour ajouter ou retirer une diapo, une question ou une séance, ou changer une image, explique-le au prof et utilise l'agent qui produit ce document, avec sa validation.
+- Ce skill remplace du texte et ajoute des paragraphes ou des puces. Pour ajouter ou retirer une diapo, une question ou une séance, ou changer une image, explique-le au prof et utilise l'agent qui produit ce document, avec sa validation.
+- Les documents de `Cours/Sources` ne sont jamais modifiés.
 - Il ne modifie que le chapitre demandé. Chaque classe a sa propre copie : si le prof veut aussi corriger une autre classe, cherche avec `modifier.py rechercher "<terme>" "<dossier de cours>"`, puis traite chaque chapitre séparément, avec sa propre validation.

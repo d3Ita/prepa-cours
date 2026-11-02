@@ -10,6 +10,7 @@ from pathlib import Path
 
 from evaluations import CHOIX_MINIMUM, OBJECTIF, lire_corrige, lire_sujet, verifier
 from generer import lire_diapos
+from redaction import blocage
 
 FICHIERS_SEANCE = ("scenario.md", "diapos.md", "qcm.md", "qcm-corrige.md")
 FICHIERS_OBJECTIFS = ("scenario.md", "diapos.md", "qcm-corrige.md")
@@ -162,6 +163,8 @@ def controler(chapitre):
         return [Probleme(".travail/objectifs.md est absent : lancez le contrôle depuis le dossier du chapitre.",
                          severite="critical", etape="decoupage")], []
     problemes, infos = [], []
+    if blocage(chapitre):
+        problemes.append(Probleme(blocage(chapitre), severite="critical", etape="decoupage"))
     for nom, motif in CHAMPS_OBLIGATOIRES.items():
         if not re.search(rf"^[-*\s]*{motif}\s*:\s*\S", objectifs_md, re.MULTILINE | re.IGNORECASE):
             problemes.append(Probleme(f"objectifs.md n'indique pas : {nom}.", etape="decoupage"))

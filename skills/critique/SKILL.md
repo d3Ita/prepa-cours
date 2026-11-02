@@ -1,7 +1,7 @@
 ---
 name: critique
 description: Recherche activement les problèmes dans ce que les agents ont produit pour un chapitre (hallucinations, contradictions, objectifs oubliés, QCM ambigus, corrigés faux, temps irréaliste) et les rend sous forme de constats structurés. À utiliser après le découpage, les scénarios ou les diapos et évaluations.
-argument-hint: "[decoupage | scenarios | livrables]"
+argument-hint: "[redaction | decoupage | scenarios | livrables]"
 ---
 
 # Critiquer une production
@@ -10,7 +10,9 @@ Ton rôle est de trouver ce qui ne va pas, pas de rassurer. Tu ne corriges rien,
 
 ## Ce que tu lis
 
-Lis le cours d'origine dans `Cours/` avec `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/extraire_texte.py" fichier` (lis les PDF directement), sans les fichiers `seance-*`. Il fait référence. Lis `.travail/objectifs.md`, `${CLAUDE_PLUGIN_ROOT}/references/niveaux.md` et le fichier de la matière dans `${CLAUDE_PLUGIN_ROOT}/references/matieres/` (`autres.md` s'il n'y en a pas).
+Lis le cours d'origine dans `Cours/` avec `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/extraire_texte.py" fichier` (lis les PDF directement), sans les fichiers `seance-*` ni `Cours/Sources`. Il fait référence.
+
+**Étape `redaction` :** c'est `Cours/cours.docx` que tu critiques, et les documents de `Cours/Sources` font référence. Cherche ce qui en est absent, déformé ou contradictoire, et les notions importantes oubliées. N'écris aucun fichier et ne lance pas `qualite.py` : rends les constats dans ta réponse, au même format, pour que le prof décide. Lis `.travail/objectifs.md`, `${CLAUDE_PLUGIN_ROOT}/references/niveaux.md` et le fichier de la matière dans `${CLAUDE_PLUGIN_ROOT}/references/matieres/` (`autres.md` s'il n'y en a pas).
 
 Selon l'étape, lis aussi dans `.travail` :
 

@@ -30,7 +30,8 @@ SUFFIXES_ODF = (".odt", ".odp")
 SUFFIXES = SUFFIXES_TEXTE + SUFFIXES_OOXML + SUFFIXES_ODF
 # Ces formats peuvent contenir une référence, mais le script ne sait ni les lire ni les modifier.
 SUFFIXES_NON_LUS = (".pdf", ".doc", ".ppt", ".rtf", ".xlsx", ".ods")
-DOSSIERS_IGNORES = {".git", "revue"}
+# Sources : les documents d'origine fournis par le prof ne doivent jamais être modifiés.
+DOSSIERS_IGNORES = {".git", "revue", "Sources"}
 PARTIES_OOXML = re.compile(r"word/(document|header\d*|footer\d*|footnotes|endnotes)\.xml"
                            r"|ppt/(slides/slide|notesSlides/notesSlide)\d+\.xml")
 PARAGRAPHE = re.compile(r"<(w|a):p(?:\s[^>]*)?>.*?</\1:p>", re.DOTALL)
@@ -97,8 +98,10 @@ def remplacer_dans_paragraphe(xml, avant, apres):
         # On reprend après le nouveau texte, pour ne pas le retraiter.
         curseur = debut + len(apres)
         faits += 1
-    if not faits:
-        return xml
+    return reecrire_runs(xml, runs, textes) if faits else xml
+
+
+def reecrire_runs(xml, runs, textes):
     morceaux, position = [], 0
     for run, texte in zip(runs, textes):
         morceaux.append(xml[position:run.start()])
@@ -141,6 +144,45 @@ def remplacer(donnees, suffixe, avant, apres, toutes=False):
                 contenu = PARAGRAPHE.sub(lambda m: remplacer_dans_paragraphe(m.group(0), avant, apres), xml).encode("utf-8")
             cible.writestr(info, contenu)
     return sortie.getvalue(), nombre
+
+
+def inserer(donnees, suffixe, avant, apres):
+    """Ajoute un paragraphe après celui qui contient « avant », avec sa mise en forme.
+
+    Renvoie (nouveau contenu, nombre de paragraphes trouvés), ou -2 si le format ne le permet pas.
+    """
+    if suffixe in SUFFIXES_ODF:
+        return donnees, -2
+    if suffixe in SUFFIXES_TEXTE:
+        texte, encodage = decoder(donnees)
+        lignes = texte.splitlines(keepends=True)
+        indices = [i for i, l in enumerate(lignes) if avant in l]
+        if len(indices) != 1:
+            return donnees, len(indices)
+        fin = "\r\n" if lignes[indices[0]].endswith("\r\n") else "\n"
+        lignes[indices[0]] = lignes[indices[0]].rstrip("\r\n") + fin
+        lignes.insert(indices[0] + 1, apres + fin)
+        bom = donnees.startswith(b"\xef\xbb\xbf")
+        return (b"\xef\xbb\xbf" if bom else b"") + "".join(lignes).encode(encodage), 1
+
+    nombre = sum(t.count(avant) for _, t in paragraphes(donnees, suffixe))
+    if nombre != 1:
+        return donnees, nombre
+
+    def ajouter_apres(m):
+        runs = list(RUN.finditer(m.group(0)))
+        if avant not in "".join(html.unescape(r.group(3)) for r in runs):
+            return m.group(0)
+        return m.group(0) + reecrire_runs(m.group(0), runs, [apres] + [""] * (len(runs) - 1))
+
+    sortie = io.BytesIO()
+    with zipfile.ZipFile(io.BytesIO(donnees)) as source, zipfile.ZipFile(sortie, "w") as cible:
+        for info in source.infolist():
+            contenu = source.read(info.filename)
+            if PARTIES_OOXML.fullmatch(info.filename):
+                contenu = PARAGRAPHE.sub(ajouter_apres, contenu.decode("utf-8")).encode("utf-8")
+            cible.writestr(info, contenu)
+    return sortie.getvalue(), 1
 
 
 def fichiers_du_dossier(dossier):
@@ -215,6 +257,8 @@ def lire_plan(chapitre):
         if (not isinstance(m, dict) or m.get("role") not in ("cible", "reference") or not isinstance(m.get("avant"), str)
                 or not m["avant"] or not isinstance(m.get("apres"), str) or "\n" in m["avant"] + m["apres"]):
             sys.exit(f"Modification invalide dans le plan : {m}. Le texte tient sur une seule ligne.")
+        if m.get("action", "remplacer") not in ("remplacer", "inserer") or (m.get("action") == "inserer" and not m["apres"].strip()):
+            sys.exit(f"Action invalide dans le plan : {m}.")
     if not any(m["role"] == "cible" for m in modifications):
         sys.exit("Le plan doit désigner l'endroit demandé avec le rôle « cible ».")
     return plan
@@ -234,11 +278,16 @@ def preparer(chapitre):
         actuel = nouveaux.get(relatif, chemin.read_bytes())
         toutes = m.get("toutes") is True
         try:
-            contenu, nombre = remplacer(actuel, chemin.suffix.lower(), m["avant"], m["apres"], toutes)
+            if m.get("action") == "inserer":
+                contenu, nombre = inserer(actuel, chemin.suffix.lower(), m["avant"], m["apres"])
+            else:
+                contenu, nombre = remplacer(actuel, chemin.suffix.lower(), m["avant"], m["apres"], toutes)
         except (zipfile.BadZipFile, KeyError, UnicodeDecodeError) as e:
             erreurs.append(f"{relatif} : lecture impossible ({e}).")
             continue
-        if nombre == -1:
+        if nombre == -2:
+            erreurs.append(f"{relatif} : ajouter un paragraphe n'est pas possible dans ce format. Le prof doit le faire lui-même.")
+        elif nombre == -1:
             erreurs.append(f"{relatif} : « {m['avant']} » est coupé par une mise en forme. Le prof doit le modifier lui-même.")
         elif nombre == 0:
             erreurs.append(f"{relatif} : « {m['avant']} » est introuvable.")
@@ -285,7 +334,10 @@ def afficher_apercu(etat):
         if lignes:
             print(f"\n{titre} :")
         for m in lignes:
-            print(f"\n  {m['fichier']}\n  - {m['avant']}\n  + {m['apres']}")
+            if m.get("action") == "inserer":
+                print(f"\n  {m['fichier']}\n  après : {m['avant']}\n  + {m['apres']}")
+            else:
+                print(f"\n  {m['fichier']}\n  - {m['avant']}\n  + {m['apres']}")
     if etat["ignorer"]:
         print("\nFichiers laissés tels quels :")
         for fichier, raison in etat["ignorer"].items():
