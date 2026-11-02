@@ -7,7 +7,7 @@
 
 *Claude Code plugin that organizes a teacher's courses by level, class and chapter, and fits a course to a subject and a given number of hours and sessions, then produces a lesson plan, slides and a 5-question quiz for each session, with version history. The plugin speaks French.*
 
-> **Version 0.6 : préversion.** Les scripts sont testés automatiquement, mais le parcours complet avec les agents n'a pas encore été éprouvé sur de vrais cours. Le score qualité aide à repérer des problèmes, il ne garantit pas l'exactitude. Relisez toujours ce qui est produit, surtout les corrigés, avant de l'utiliser en classe.
+> **Version 0.7 : préversion.** Les scripts sont testés automatiquement, mais le parcours complet avec les agents n'a pas encore été éprouvé sur de vrais cours. Le score qualité aide à repérer des problèmes, il ne garantit pas l'exactitude. Relisez toujours ce qui est produit, surtout les corrigés, avant de l'utiliser en classe.
 
 ## Vos cours bien rangés
 
@@ -59,6 +59,7 @@ Le projet n'ajoute qu'un agent. Ce que du code peut vérifier de façon fiable (
 | `/prepa-cours:organiser` | Classe vos cours par niveau, classe et chapitre, et réutilise un chapitre pour une autre classe |
 | `/prepa-cours:decoupage` | Adapte le cours à vos heures et à vos séances, ou réajuste un découpage existant |
 | `/prepa-cours:critique` | Lance une critique des documents d'une étape |
+| `/prepa-cours:modifier` | Modifie un endroit précis et ses références, après votre accord |
 | `/prepa-cours:versions` | Sauvegarde, compare et restaure vos fichiers |
 
 ### Agents
@@ -69,6 +70,22 @@ Le projet n'ajoute qu'un agent. Ce que du code peut vérifier de façon fiable (
 | `concepteur-diapos` | Crée les diapos et les notes | Scénario, objectifs, constats éventuels | `diapos.md`, `Diapos/seance-N-diapos.pptx` | N'invente pas d'images, n'écrase pas vos retouches |
 | `evaluateur` | Crée les QCM, les corrigés et l'évaluation finale demandée | Scénario, objectifs, constats éventuels | `qcm.md`, `qcm-corrige.md`, `evaluation.md`, `corrige.md` et leurs `.docx` | Ne corrige pas de copies d'élèves |
 | `critique` | Cherche les problèmes des autres agents | Cours d'origine, documents de l'étape, rapports des scripts | `.travail/revue/critique.json` | Ne corrige rien, n'approuve rien, et peut manquer des erreurs |
+| `modificateur` | Prépare une modification précise et la liste de ses références | Votre demande, documents du chapitre | `.travail/revue/modification.json` | N'applique rien lui-même, et peut manquer une référence qui ne cite pas le terme |
+
+### Modifier un endroit précis
+
+Demandez par exemple : « dans la diapo 3 de la séance 1, remplace "capte la lumière" par "absorbe la lumière" ».
+
+```text
+Votre demande → Plan de modification → Aperçu → Votre accord → Sauvegarde → Modification
+```
+
+1. L'agent `modificateur` trouve l'endroit et recherche ses références dans tous les fichiers du chapitre, y compris les notes des diapos et les textes de travail.
+2. Vous voyez chaque changement, « avant » et « après », avec les fichiers laissés tels quels et ceux que le plugin ne peut pas vérifier, comme un PDF.
+3. Rien n'est écrit sans votre accord. Si un fichier change entre l'aperçu et votre réponse, ou si une référence trouvée n'est pas traitée, l'application est refusée.
+4. Le plugin sauvegarde, puis modifie les `.pptx`, `.docx`, `.odt`, `.odp` et fichiers texte **sur place, sans les régénérer**. Vos retouches, vos images et votre mise en forme restent intactes, et un retour en arrière reste possible.
+
+Ensuite, la validation et la critique précédentes ne valent plus : le plugin vous propose de relancer la boucle de qualité. Il remplace du texte : pour ajouter ou retirer une diapo, une question ou une séance, il passe par l'agent qui produit ce document. Chaque classe ayant sa propre copie, il ne modifie qu'un chapitre à la fois, après votre accord pour chacun.
 
 ### Boucle de critique
 
@@ -241,6 +258,7 @@ Vos retouches sont protégées : le plugin n'écrase jamais un fichier existant 
 ## Limites
 
 - Les anciens fichiers Word `.doc` ne sont pas lus : enregistrez-les d'abord en `.docx`.
+- La modification ciblée ne peut pas changer un texte coupé par une mise en forme dans un `.odt` ou un `.odp`, ni les PDF : elle vous le signale pour que vous le fassiez vous-même.
 - Le plugin ne lit que le texte de votre cours, pas ses images.
 - Les formules complexes ne sont pas mises en forme : elles sont signalées `[FORMULE À SAISIR]` pour que vous les saisissiez dans l'éditeur d'équations.
 - La durée de chaque notion est une estimation : ajustez-la selon votre classe.

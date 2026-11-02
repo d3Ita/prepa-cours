@@ -49,6 +49,7 @@ Un bon score ne remplace jamais la validation du prof, et un mauvais score ne l'
 - Avant toute modification d'un fichier existant, sauvegarde.
 - Chaque fichier produit va dans son dossier : `Cours`, `Diapos`, `QCM`, `Evaluations` ou `Corrections`.
 - Si le prof veut retrouver, classer ou réutiliser un cours, utilise le skill `organiser`.
+- Si le prof veut changer un endroit précis d'un document, utilise le skill `modifier`.
 - Si les heures changent, utilise le skill `decoupage`.
 - Pour adapter un cours à un autre niveau, suis `${CLAUDE_PLUGIN_ROOT}/references/niveaux.md`.
 - Si le prof veut revenir en arrière ou comparer des versions, utilise le skill `versions`.
