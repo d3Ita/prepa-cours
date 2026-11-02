@@ -8,14 +8,15 @@ argument-hint: "[volume horaire et séances, ex. 12 h en 6 séances de 2 h]"
 
 Le découpage horaire vient du prof : tu l'appliques exactement et tu adaptes le contenu à ce temps, jamais l'inverse. Les séances peuvent avoir des durées différentes.
 
-## Écrire `objectifs.md`
+## Écrire `.travail/objectifs.md`
 
-Lis tout le cours source. Si le prof n'a pas donné le niveau, la matière, le volume horaire et la durée de chaque séance, demande-les. Déduis le niveau ou la matière du cours seulement pour les lui proposer. Lis ensuite `${CLAUDE_PLUGIN_ROOT}/references/niveaux.md` et le fichier de sa matière dans `${CLAUDE_PLUGIN_ROOT}/references/matieres/` (`autres.md` s'il n'y en a pas). Écris alors :
+Travaille dans le dossier du chapitre, créé avec le skill `organiser`. Lis tout le cours source dans `Cours/`. Si le prof n'a pas donné le niveau, la matière, le volume horaire et la durée de chaque séance, demande-les. Déduis le niveau ou la matière du cours seulement pour les lui proposer. Lis ensuite `${CLAUDE_PLUGIN_ROOT}/references/niveaux.md` et le fichier de sa matière dans `${CLAUDE_PLUGIN_ROOT}/references/matieres/` (`autres.md` s'il n'y en a pas). Écris alors :
 
 ```markdown
 # Objectifs : titre du cours
 
 Niveau : Première, voie générale
+Classe : Première 2
 Matière : SVT
 Durée totale : 5 h
 
@@ -55,5 +56,5 @@ Quand les heures changent :
 
 1. Sauvegarde : `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/versions.py" sauver "Avant nouveau découpage"`.
 2. Compare l'ancien et le nouveau découpage, et liste les séances concernées et les retouches du prof qui seraient perdues.
-3. Après validation, modifie `objectifs.md` et refais seulement les séances concernées.
-4. Déplace le contenu des séances supprimées, puis demande l'accord du prof avant de retirer leurs dossiers.
+3. Après validation, modifie `.travail/objectifs.md` et refais seulement les séances concernées.
+4. Déplace le contenu des séances supprimées, puis demande l'accord du prof avant de retirer leurs fichiers de `Cours`, `Diapos`, `QCM` et `Corrections`, ainsi que leur dossier dans `.travail`.

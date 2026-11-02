@@ -6,7 +6,7 @@ argument-hint: "[numéro de séance]"
 
 # Créer le QCM d'une séance
 
-Chaque séance a exactement **5 questions**. Lis `objectifs.md`, `seance-N/scenario.md`, `${CLAUDE_PLUGIN_ROOT}/references/niveaux.md` et le fichier de la matière dans `${CLAUDE_PLUGIN_ROOT}/references/matieres/` (`autres.md` s'il n'y en a pas), et applique-les. Écris ensuite `seance-N/qcm.md` et `seance-N/qcm-corrige.md`.
+Chaque séance a exactement **5 questions**. Travaille dans le dossier du chapitre. Lis `.travail/objectifs.md`, `.travail/seance-N/scenario.md`, `${CLAUDE_PLUGIN_ROOT}/references/niveaux.md` et le fichier de la matière dans `${CLAUDE_PLUGIN_ROOT}/references/matieres/` (`autres.md` s'il n'y en a pas), et applique-les. Écris ensuite `.travail/seance-N/qcm.md` et `.travail/seance-N/qcm-corrige.md`.
 
 `qcm.md` :
 
@@ -30,11 +30,11 @@ D. Par la tige
 Question 1 : B (OBJ1) — L'eau entre par les racines.
 ```
 
-Génère ensuite les fichiers à imprimer, depuis le dossier du cours :
+Génère ensuite les fichiers à imprimer, le sujet dans `QCM` et le corrigé dans `Corrections` :
 
-`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/generer.py" docx seance-N/qcm.md seance-N/qcm.docx --outils "${CLAUDE_PLUGIN_DATA}"`
+`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/generer.py" docx .travail/seance-N/qcm.md QCM/seance-N-qcm.docx --outils "${CLAUDE_PLUGIN_DATA}"`
 
-`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/generer.py" docx seance-N/qcm-corrige.md seance-N/qcm-corrige.docx --outils "${CLAUDE_PLUGIN_DATA}"`
+`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/generer.py" docx .travail/seance-N/qcm-corrige.md Corrections/seance-N-qcm-corrige.docx --outils "${CLAUDE_PLUGIN_DATA}"`
 
 Si un `.docx` existe déjà, sauvegarde avec `versions.py sauver`, demande au prof, puis ajoute `--ecraser` seulement s'il accepte.
 

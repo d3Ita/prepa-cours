@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Historique Git d'un dossier de cours, à lancer depuis ce dossier.
+"""Historique Git d'un dossier de cours, à lancer depuis ce dossier ou depuis l'un de ses chapitres.
 
 Usage : versions.py sauver "message" | historique
         versions.py comparer <version> <fichier> | restaurer <version> <fichier>
@@ -13,6 +13,7 @@ import tempfile
 from pathlib import Path
 
 from extraire_texte import extraire
+from organiser import MARQUEUR
 
 IGNORES = "~$*\n.~lock.*#\n.DS_Store\nThumbs.db\n"
 BUREAUTIQUE = (".pptx", ".docx", ".odp", ".odt")
@@ -29,15 +30,17 @@ def preparer():
     if not shutil.which("git"):
         sys.exit("Git n'est pas installé sur cet ordinateur : les sauvegardes sont impossibles.")
     dossier = Path.cwd().resolve()
+    # Tout le dossier de cours partage un seul historique, quel que soit le chapitre courant.
+    racine = next((p for p in (dossier, *dossier.parents) if (p / MARQUEUR).exists()), dossier)
     # Évite de versionner tout un disque ou tout un dossier personnel par erreur.
-    if dossier in (Path.home().resolve(), Path(dossier.anchor)):
+    if racine in (Path.home().resolve(), Path(racine.anchor)):
         sys.exit("Placez-vous dans le dossier du cours avant de sauvegarder.")
-    racine = git("rev-parse", "--show-toplevel", check=False)
-    if not racine:
-        git("init")
-    elif Path(racine).resolve() != dossier:
-        sys.exit(f"Ce dossier fait déjà partie d'un autre historique : {racine}")
-    ignores = Path(".gitignore")
+    existant = git("rev-parse", "--show-toplevel", check=False)
+    if not existant:
+        git("-C", str(racine), "init")
+    elif Path(existant).resolve() != racine:
+        sys.exit(f"Ce dossier fait déjà partie d'un autre historique : {existant}")
+    ignores = racine / ".gitignore"
     if not ignores.exists():
         ignores.write_text(IGNORES, encoding="utf-8")
 
@@ -59,7 +62,8 @@ def sauver(message):
 
 def historique():
     preparer()
-    print(git("log", "--date=format:%d/%m/%Y %H:%M", "--format=%h  %ad  %s", check=False)
+    # « -- . » limite l'historique au chapitre courant.
+    print(git("log", "--date=format:%d/%m/%Y %H:%M", "--format=%h  %ad  %s", "--", ".", check=False)
           or "Aucune sauvegarde pour l'instant.")
 
 

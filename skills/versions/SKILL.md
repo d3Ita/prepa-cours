@@ -6,7 +6,7 @@ argument-hint: "[sauver | historique | comparer | restaurer]"
 
 # Gérer les versions du cours
 
-Parle de « sauvegardes » et de « versions », jamais de Git. Lance les commandes depuis le dossier du cours (sous Windows, remplace `python3` par `python` si besoin).
+Parle de « sauvegardes » et de « versions », jamais de Git. Lance les commandes depuis le dossier du chapitre concerné (sous Windows, remplace `python3` par `python` si besoin). Tout le dossier de cours partage un même historique : une sauvegarde couvre tous les chapitres, et l'historique affiché depuis un chapitre ne montre que ce chapitre.
 
 - Sauvegarder : `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/versions.py" sauver "ce qui a changé"`
 - Voir l'historique : `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/versions.py" historique`

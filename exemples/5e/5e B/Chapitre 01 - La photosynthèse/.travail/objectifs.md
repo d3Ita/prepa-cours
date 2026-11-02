@@ -1,6 +1,7 @@
 # Objectifs : la photosynthèse
 
 Niveau : 5e
+Classe : 5e B
 Matière : SVT
 Durée totale : 1 h 50
 

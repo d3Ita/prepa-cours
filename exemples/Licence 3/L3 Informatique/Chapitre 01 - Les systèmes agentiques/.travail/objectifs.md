@@ -1,6 +1,7 @@
 # Objectifs : les systèmes agentiques
 
 Niveau : licence 3 informatique
+Classe : L3 Informatique
 Matière : Informatique
 Durée totale : 6 h
 

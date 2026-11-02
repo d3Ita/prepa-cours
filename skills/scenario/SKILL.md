@@ -1,12 +1,12 @@
 ---
 name: scenario
-description: Rédige le scénario pédagogique minuté d'une séance à partir du cours de l'enseignant et du découpage de objectifs.md.
+description: Rédige le scénario pédagogique minuté d'une séance à partir du cours de l'enseignant et du découpage du chapitre.
 argument-hint: "[numéro de séance]"
 ---
 
 # Écrire le scénario d'une séance
 
-Lis le cours source et `objectifs.md`. Lis aussi `${CLAUDE_PLUGIN_ROOT}/references/niveaux.md` et le fichier de la matière dans `${CLAUDE_PLUGIN_ROOT}/references/matieres/` (`autres.md` s'il n'y en a pas), et applique-les. Écris ensuite `seance-N/scenario.md` pour la séance demandée :
+Travaille dans le dossier du chapitre. Lis le cours source dans `Cours/` et `.travail/objectifs.md`. Lis aussi `${CLAUDE_PLUGIN_ROOT}/references/niveaux.md` et le fichier de la matière dans `${CLAUDE_PLUGIN_ROOT}/references/matieres/` (`autres.md` s'il n'y en a pas), et applique-les. Écris ensuite `.travail/seance-N/scenario.md` pour la séance demandée :
 
 ```markdown
 # Séance 1 : titre
@@ -22,13 +22,13 @@ Niveau, durée de la séance, matériel nécessaire
 - Objectif visé : OBJ1
 ```
 
-Génère ensuite la version à lire depuis le dossier du cours, en ajoutant `--ecraser` seulement si tu as sauvegardé avant et que le prof a demandé cette mise à jour :
+Génère ensuite la version à lire, en ajoutant `--ecraser` seulement si tu as sauvegardé avant et que le prof a demandé cette mise à jour :
 
-`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/generer.py" docx seance-N/scenario.md seance-N/scenario.docx --outils "${CLAUDE_PLUGIN_DATA}"`
+`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/generer.py" docx .travail/seance-N/scenario.md Cours/seance-N-scenario.docx --outils "${CLAUDE_PLUGIN_DATA}"`
 
 ## Règles
 
-- La durée vient de `objectifs.md` : les phases s'enchaînent sans trou et s'arrêtent exactement à la fin de la séance.
+- La durée vient de `.travail/objectifs.md` : les phases s'enchaînent sans trou et s'arrêtent exactement à la fin de la séance.
 - Traite tous les objectifs attribués à la séance, et seulement le contenu prévu pour elle.
 - À partir de la séance 2, commence par un rappel de la séance précédente.
 - Termine par le QCM (10 min), sauf si le prof a décidé de le faire hors de la classe.

@@ -22,4 +22,4 @@ Demande aussi la voie, l'option ou la spécialité quand elle change les attente
 
 ## Adapter un cours existant à un autre niveau
 
-Crée un nouveau dossier pour ce niveau, sans modifier le cours d'origine. Présente au prof ce qui change (notions à simplifier, à approfondir ou à vérifier dans le programme), puis attends sa validation.
+Crée un nouveau chapitre dans le niveau et la classe visés, sans modifier le cours d'origine. Présente au prof ce qui change (notions à simplifier, à approfondir ou à vérifier dans le programme), puis attends sa validation.

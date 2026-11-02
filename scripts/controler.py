@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Contrôle la cohérence d'un dossier de cours : découpage, objectifs, minutage, QCM, diapos, barème.
+"""Contrôle la cohérence d'un chapitre : découpage, objectifs, minutage, QCM, diapos, barème, fichiers rangés.
 
-Usage : controler.py [dossier]
+Usage : controler.py [dossier du chapitre]
 Code de sortie 1 s'il y a au moins un problème.
 """
 import re
@@ -12,6 +12,10 @@ from generer import lire_diapos
 
 FICHIERS_SEANCE = ("scenario.md", "diapos.md", "qcm.md", "qcm-corrige.md")
 FICHIERS_OBJECTIFS = ("scenario.md", "diapos.md", "qcm-corrige.md")
+LIVRABLES_SEANCE = ("Cours/seance-{n}-scenario.docx", "Diapos/seance-{n}-diapos.pptx",
+                    "QCM/seance-{n}-qcm.docx", "Corrections/seance-{n}-qcm-corrige.docx")
+LIVRABLES_EVALUATION = ("Evaluations/evaluation.docx", "Corrections/evaluation-corrige.docx")
+CATEGORIES = ("Cours", "Diapos", "QCM", "Evaluations", "Corrections")
 MAX_PUCES = 6
 QUESTIONS_QCM = 5
 CHOIX_MINIMUM = 3
@@ -125,11 +129,26 @@ def controler_evaluation(dossier, definis):
     return problemes, infos
 
 
-def controler(dossier):
+def controler_livrables(chapitre, numeros, avec_evaluation):
+    attendus = [m.format(n=n) for n in numeros for m in LIVRABLES_SEANCE]
+    if avec_evaluation:
+        attendus += LIVRABLES_EVALUATION
+    problemes = [f"Le fichier {f} est absent." for f in attendus if not (chapitre / f).is_file()]
+    # Après un nouveau découpage, un ancien fichier pourrait être distribué par erreur.
+    for categorie in CATEGORIES:
+        for chemin in sorted((chapitre / categorie).glob("seance-*")):
+            m = re.match(r"seance-(\d+)-", chemin.name)
+            if m and int(m.group(1)) not in numeros:
+                problemes.append(f"Le fichier {categorie}/{chemin.name} ne correspond à aucune séance du découpage.")
+    return problemes
+
+
+def controler(chapitre):
     """Renvoie (problèmes, informations)."""
+    dossier = chapitre / ".travail"
     objectifs_md = lire(dossier / "objectifs.md")
     if objectifs_md is None:
-        return ["objectifs.md est absent."], []
+        return [".travail/objectifs.md est absent : lancez le contrôle depuis le dossier du chapitre."], []
     problemes, infos = [], []
     for nom, motif in CHAMPS_OBLIGATOIRES.items():
         if not re.search(rf"^[-*\s]*{motif}\s*:\s*\S", objectifs_md, re.MULTILINE | re.IGNORECASE):
@@ -171,6 +190,7 @@ def controler(dossier):
 
     autres_problemes, autres_infos = controler_evaluation(dossier, definis)
     problemes += autres_problemes
+    problemes += controler_livrables(chapitre, numeros, (dossier / "evaluation.md").is_file())
     infos = [f"{len(seances)} séance(s), {total} min au total.", *autres_infos]
     for chemin in sorted(dossier.rglob("*.md")):
         nombre = chemin.read_text(encoding="utf-8").count("[À VÉRIFIER]")

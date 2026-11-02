@@ -210,6 +210,7 @@ def main():
         sys.exit(f"Fichier introuvable : {a.source}")
     assurer_outils(a.outils)
     texte = a.source.read_text(encoding="utf-8")
+    a.sortie.parent.mkdir(parents=True, exist_ok=True)
     try:
         if a.format == "pptx":
             vers_pptx(texte, a.sortie, a.modele, a.source.resolve().parent)

@@ -6,20 +6,20 @@ argument-hint: "[numéro de séance]"
 
 # Créer les diapos d'une séance
 
-Lis `objectifs.md`, `${CLAUDE_PLUGIN_ROOT}/references/niveaux.md` et le fichier de la matière dans `${CLAUDE_PLUGIN_ROOT}/references/matieres/` (`autres.md` s'il n'y en a pas), et applique-les. Écris ensuite `seance-N/diapos.md` à partir de `seance-N/scenario.md`, puis génère `seance-N/diapos.pptx` (LibreOffice Impress l'ouvre aussi).
+Travaille dans le dossier du chapitre. Lis `.travail/objectifs.md`, `${CLAUDE_PLUGIN_ROOT}/references/niveaux.md` et le fichier de la matière dans `${CLAUDE_PLUGIN_ROOT}/references/matieres/` (`autres.md` s'il n'y en a pas), et applique-les. Écris ensuite `.travail/seance-N/diapos.md` à partir de `.travail/seance-N/scenario.md`, puis génère `Diapos/seance-N-diapos.pptx` (LibreOffice Impress l'ouvre aussi).
 
 ```markdown
 # Titre de la diapo
 - Point clé avec un mot **important**
   - Détail
-![Schéma de la feuille](images/feuille.png)
+![Schéma de la feuille](../../Diapos/images/feuille.png)
 > Objectif : OBJ1
 > Note pour le prof, visible seulement en mode présentateur
 ```
 
-Le chemin d'une image part du dossier de la séance. Génération depuis le dossier du cours :
+Range les images du prof dans `Diapos/images/`. Génération :
 
-`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/generer.py" pptx seance-N/diapos.md seance-N/diapos.pptx --outils "${CLAUDE_PLUGIN_DATA}"`
+`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/generer.py" pptx .travail/seance-N/diapos.md Diapos/seance-N-diapos.pptx --outils "${CLAUDE_PLUGIN_DATA}"`
 
 Ajoute `--modele fichier.pptx` si le prof a un modèle d'établissement.
 
@@ -32,7 +32,7 @@ Ajoute `--modele fichier.pptx` si le prof a un modèle d'établissement.
 - N'utilise que des images fournies par le prof. S'il en manque une, décris-la dans les notes : « Image à ajouter : … ».
 - Toute information absente du cours source porte la mention `[À VÉRIFIER]`.
 
-## Si `diapos.pptx` existe déjà
+## Si `Diapos/seance-N-diapos.pptx` existe déjà
 
 Le prof l'a peut-être retouché, et le régénérer effacerait ses modifications de la version courante.
 

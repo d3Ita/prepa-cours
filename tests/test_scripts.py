@@ -132,7 +132,7 @@ class TestScripts(unittest.TestCase):
         self.assertIn("Ajouté : Nouvelle idée", r.stdout)
 
     def ecrire_cours(self, **remplacements):
-        """Écrit un cours valide de deux séances ; une clé « s1_qcm » désigne seance-1/qcm.md."""
+        """Écrit un chapitre valide de deux séances ; une clé « s1_qcm » désigne .travail/seance-1/qcm.md."""
         qcm = "".join(f"## Question {i}\nÉnoncé\nA. un\nB. deux\nC. trois\nD. quatre\n" for i in range(1, 6))
         reponses = "".join(f"Question {i} : {l} (OBJ1, OBJ2)\n" for i, l in enumerate("ABCDA", 1))
         fichiers = {
@@ -149,8 +149,13 @@ class TestScripts(unittest.TestCase):
         for cle, texte in remplacements.items():
             fichiers[cle] = (fichiers[cle][0], texte)
         for chemin, texte in fichiers.values():
-            (self.d / chemin).parent.mkdir(exist_ok=True)
-            (self.d / chemin).write_text(texte, encoding="utf-8")
+            (self.d / ".travail" / chemin).parent.mkdir(parents=True, exist_ok=True)
+            (self.d / ".travail" / chemin).write_text(texte, encoding="utf-8")
+        for n in (1, 2):
+            for livrable in (f"Cours/seance-{n}-scenario.docx", f"Diapos/seance-{n}-diapos.pptx",
+                             f"QCM/seance-{n}-qcm.docx", f"Corrections/seance-{n}-qcm-corrige.docx"):
+                (self.d / livrable).parent.mkdir(exist_ok=True)
+                (self.d / livrable).touch()
 
     def test_controle_cours_coherent(self):
         self.ecrire_cours()
@@ -223,10 +228,103 @@ class TestScripts(unittest.TestCase):
 
     def test_controle_evaluation_finale_facultative(self):
         self.ecrire_cours()
-        (self.d / "evaluation.md").write_text("Total : 10 points\n## Q (9 points)\n", encoding="utf-8")
+        (self.d / ".travail" / "evaluation.md").write_text("Total : 10 points\n## Q (9 points)\n", encoding="utf-8")
         r = lancer("controler.py", dossier=self.d)
         self.assertIn("corrige.md est absent", r.stdout)
         self.assertIn("totalisent 9 points", r.stdout)
+        self.assertIn("Evaluations/evaluation.docx est absent", r.stdout)
+
+    def test_controle_verifie_les_fichiers_ranges(self):
+        self.ecrire_cours()
+        (self.d / "Diapos" / "seance-1-diapos.pptx").unlink()
+        (self.d / "QCM" / "seance-7-qcm.docx").touch()
+        r = lancer("controler.py", dossier=self.d)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("Diapos/seance-1-diapos.pptx est absent", r.stdout)
+        self.assertIn("QCM/seance-7-qcm.docx ne correspond", r.stdout)
+
+    def creer_chapitre(self, racine="Cours", niveau="Terminale", classe="Terminale 2", chapitre="La génétique"):
+        r = lancer("organiser.py", "creer", racine, niveau, classe, chapitre, dossier=self.d)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        return Path(r.stdout.strip())
+
+    def test_organisation_niveau_classe_chapitre(self):
+        chapitre = self.creer_chapitre()
+        racine = (self.d / "Cours").resolve()
+        self.assertEqual(chapitre, racine / "Terminale" / "Terminale 2" / "Chapitre 01 - La génétique")
+        for categorie in ("Cours", "Diapos", "QCM", "Evaluations", "Corrections", ".travail"):
+            self.assertTrue((chapitre / categorie).is_dir(), categorie)
+        self.assertEqual(self.creer_chapitre(chapitre="LA GÉNÉTIQUE"), chapitre)
+        self.assertEqual(self.creer_chapitre(chapitre="L'évolution").name, "Chapitre 02 - L'évolution")
+        arbre = lancer("organiser.py", "arbre", "Cours", dossier=self.d).stdout
+        for attendu in ("Terminale\n", "  Terminale 2\n", "Chapitre 02 - L'évolution (Cours : 0"):
+            self.assertIn(attendu, arbre)
+        self.assertNotIn(".travail", arbre)
+
+    def test_organisation_reste_dans_le_dossier_de_cours(self):
+        for args in (("Cours", "..", "Classe", "Chap"), ("Cours", "../../dehors", "Classe", "Chap"),
+                     ("Cours", "Terminale", ".cache", "Chap")):
+            self.assertNotEqual(lancer("organiser.py", "creer", *args, dossier=self.d).returncode, 0, args)
+        self.assertFalse((self.d / "dehors").exists())
+        # Un séparateur au milieu d'un nom ne crée pas de sous-dossier.
+        chapitre = self.creer_chapitre(niveau="1re/spé")
+        self.assertEqual(chapitre.parent.parent.name, "1re spé")
+
+    def test_organisation_refuse_le_dossier_personnel(self):
+        r = lancer("organiser.py", "creer", str(Path.home()), "Terminale", "T2", "Chap", dossier=self.d)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("dossier personnel", r.stderr)
+
+    def test_ranger_ne_perd_aucun_fichier(self):
+        chapitre = self.creer_chapitre()
+        (self.d / "cours.docx").write_text("original", encoding="utf-8")
+        r = lancer("organiser.py", "ranger", "cours.docx", str(chapitre), "cours", dossier=self.d)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertTrue((self.d / "cours.docx").exists())
+        (self.d / "cours.docx").write_text("autre", encoding="utf-8")
+        self.assertNotEqual(lancer("organiser.py", "ranger", "cours.docx", str(chapitre), "Cours",
+                                   "--deplacer", dossier=self.d).returncode, 0)
+        self.assertEqual((chapitre / "Cours" / "cours.docx").read_text(encoding="utf-8"), "original")
+        self.assertTrue((self.d / "cours.docx").exists())
+        self.assertNotEqual(lancer("organiser.py", "ranger", "cours.docx", str(chapitre), "Divers",
+                                   dossier=self.d).returncode, 0)
+
+    def test_dupliquer_un_chapitre_pour_une_autre_classe(self):
+        chapitre = self.creer_chapitre()
+        (chapitre / ".travail" / "objectifs.md").write_text("x", encoding="utf-8")
+        classe = chapitre.parent.parent / "Terminale 3"
+        r = lancer("organiser.py", "dupliquer", str(chapitre), str(classe), dossier=self.d)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertTrue((classe / chapitre.name / ".travail" / "objectifs.md").is_file())
+        self.assertNotEqual(lancer("organiser.py", "dupliquer", str(chapitre), str(classe),
+                                   dossier=self.d).returncode, 0)
+
+    def test_generer_range_dans_un_dossier_qui_n_existe_pas(self):
+        (self.d / "e.md").write_text("# Sujet\n", encoding="utf-8")
+        r = lancer("generer.py", "docx", "e.md", "QCM/sous/e.docx", dossier=self.d)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertTrue((self.d / "QCM" / "sous" / "e.docx").is_file())
+
+    def test_versions_depuis_un_chapitre_partagent_un_historique(self):
+        un = self.creer_chapitre(chapitre="Un")
+        deux = self.creer_chapitre(chapitre="Deux")
+        (un / "Diapos" / "d.txt").write_text("v1", encoding="utf-8")
+        self.assertEqual(lancer("versions.py", "sauver", "Chapitre un", dossier=un).returncode, 0)
+        racine = (self.d / "Cours").resolve()
+        self.assertTrue((racine / ".git").is_dir())
+        self.assertFalse((un / ".git").exists())
+        (deux / "QCM" / "q.txt").write_text("q", encoding="utf-8")
+        self.assertEqual(lancer("versions.py", "sauver", "Chapitre deux", dossier=deux).returncode, 0)
+
+        histo_un = lancer("versions.py", "historique", dossier=un).stdout
+        self.assertIn("Chapitre un", histo_un)
+        self.assertNotIn("Chapitre deux", histo_un)
+        version = histo_un.split()[0]
+        (un / "Diapos" / "d.txt").write_text("v2", encoding="utf-8")
+        r = lancer("versions.py", "restaurer", version, "Diapos/d.txt", dossier=un)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual((un / "Diapos" / "d.txt").read_text(encoding="utf-8"), "v1")
+        self.assertEqual((deux / "QCM" / "q.txt").read_text(encoding="utf-8"), "q")
 
     def test_durees_lisibles(self):
         sys.path.insert(0, str(SCRIPTS))
@@ -275,9 +373,11 @@ class TestScripts(unittest.TestCase):
 
     def test_exemples_du_depot_sont_coherents(self):
         exemples = Path(__file__).resolve().parent.parent / "exemples"
-        for exemple in ("photosynthese", "systemes-agentiques"):
-            with self.subTest(exemple):
-                r = lancer("controler.py", str(exemples / exemple), dossier=self.d)
+        chapitres = [p.parent for p in exemples.rglob(".travail")]
+        self.assertEqual(len(chapitres), 2)
+        for chapitre in chapitres:
+            with self.subTest(chapitre.name):
+                r = lancer("controler.py", str(chapitre), dossier=self.d)
                 self.assertEqual(r.returncode, 0, r.stdout)
 
     def test_version_invalide_refusee(self):
