@@ -142,8 +142,7 @@ class TestRemplacement(Base):
         self.assertEqual(relu.paragraphs[0].runs[2].text, " ici")
 
     def test_toutes_les_occurrences_seulement_si_demande(self):
-        (self.d / "t.md").write_text("a chat\nb chat\n", encoding="utf-8")
-        donnees = (self.d / "t.md").read_bytes()
+        donnees = b"a chat\nb chat\n"
         self.assertEqual(modifier.remplacer(donnees, ".md", "chat", "chien"), (donnees, 2))
         nouveau, nombre = modifier.remplacer(donnees, ".md", "chat", "chien", toutes=True)
         self.assertEqual((nouveau.decode(), nombre), ("a chien\nb chien\n", 2))
