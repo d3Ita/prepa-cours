@@ -66,7 +66,7 @@ class TestDispositions(Base):
         self.assertEqual(self.xml("ppt/slides/slide2.xml").count('b="1"') >= 2, True)
 
     def test_passe_en_liste_quand_les_cartes_ne_conviennent_pas(self):
-        cas = {"trop de puces": "- A\n- B\n- C\n- D\n- E\n", "texte trop long": "- " + "mot " * 200 + "\n"}
+        cas = {"trop de puces": "- A\n- B\n- C\n- D\n- E\n", "texte trop long": "- " + "mot " * 800 + "\n"}
         for nom, puces in cas.items():
             with self.subTest(nom):
                 prs = self.diapos(f"# Un\n\n# Deux\n{puces}")
@@ -84,6 +84,16 @@ class TestDispositions(Base):
 
         cartes = self.cartes(self.diapos("# Un\n\n# Deux\n- Idée\n- Autre\n").slides[1])
         self.assertEqual(cartes[0].text_frame.paragraphs[0].runs[0].font.size, Pt(44))
+
+    def test_un_mot_long_ne_se_coupe_pas_sur_une_carte_etroite(self):
+        from pptx.util import Pt
+
+        cartes = self.cartes(self.diapos("# Un\n\n# Deux\n- Couche délibérative\n- Le planificateur\n- Explosion combinatoire\n").slides[1])
+        taille = cartes[0].text_frame.paragraphs[0].runs[0].font.size
+        largeur_utile = (cartes[0].width - 2 * cartes[0].text_frame.margin_left) / 12700
+        self.assertLessEqual(len("combinatoire") * taille.pt * .62, largeur_utile)
+        # Le texte reste grand : les cartes passent en lignes plutôt que de le rapetisser.
+        self.assertGreaterEqual(taille, Pt(32))
 
     def test_quatre_cartes_dans_le_cadre(self):
         prs = self.diapos("# Un\n\n# Deux\n- A\n- B\n- C\n- D\n")

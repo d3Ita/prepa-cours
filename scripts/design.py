@@ -273,6 +273,9 @@ def lignes_estimees(texte, largeur, taille):
 
 
 def tient(puces, largeur, hauteur, taille):
+    # Un mot plus large que la zone serait coupé en deux : c'est illisible, même si le texte tient en hauteur.
+    if any(len(mot) * taille * .62 / 72 > largeur for _, texte in puces for mot in texte.replace("*", "").split()):
+        return False
     lignes = sum(lignes_estimees(texte, largeur, taille) for _, texte in puces)
     return lignes * taille * 1.25 / 72 + .15 * max(0, len(puces) - 1) <= hauteur
 
@@ -323,18 +326,21 @@ def disposer_cartes(puces, zone):
     n = len(groupes)
     if not groupes or n > (3 if zone else 4):
         return None
+    hauteur_ligne = (5.3 - .22 * (n - 1)) / n
+    en_lignes = [(.6, 1.75 + i * (hauteur_ligne + .22), 12.1, hauteur_ligne) for i in range(n)]
     if zone:
-        hauteur = (5.3 - .22 * (n - 1)) / n
-        cases = [(.5, 1.75 + i * (hauteur + .22), 3.9, hauteur) for i in range(n)]
+        possibles = [[(.5, 1.75 + i * (hauteur_ligne + .22), 3.9, hauteur_ligne) for i in range(n)]]
     elif n == 4:
-        cases = [(.6 + c * 6.2, 1.8 + r * 2.65, 5.9, 2.4) for r in range(2) for c in range(2)]
+        possibles = [[(.6 + c * 6.2, 1.8 + r * 2.65, 5.9, 2.4) for r in range(2) for c in range(2)], en_lignes]
     else:
         largeur = (12.1 - .3 * (n - 1)) / n
-        cases = [(.6 + i * (largeur + .3), 1.95, largeur, 4.6 if n > 1 else 3.6) for i in range(n)]
+        possibles = [[(.6 + i * (largeur + .3), 1.95, largeur, 4.6 if n > 1 else 3.6) for i in range(n)], en_lignes]
     # La plus grande taille qui tient, pour que le texte occupe la carte au lieu d'y flotter.
+    # Quand des colonnes étroites forceraient un texte minuscule, les lignes le gardent lisible.
     for taille in (44, 38, 32, 28, 24, 20) if not zone else (32, 28, 24, 20):
-        if all(tient([(0, t) for t in g], c[2] - .56, c[3] - .28, taille) for g, c in zip(groupes, cases)):
-            return groupes, cases, taille
+        for cases in possibles:
+            if all(tient([(0, t) for t in g], c[2] - .56, c[3] - .28, taille) for g, c in zip(groupes, cases)):
+                return groupes, cases, taille
     return None
 
 
