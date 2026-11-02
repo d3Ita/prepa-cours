@@ -1,0 +1,15 @@
+{
+  "name": "prof-cours",
+  "displayName": "Prof Cours",
+  "version": "0.2.0",
+  "description": "Transforme le cours d'un enseignant en scénario minuté, diapos PowerPoint/LibreOffice et évaluation avec corrigé, avec un contrôle de cohérence et un historique des versions.",
+  "author": {
+    "name": "KIKZILL",
+    "url": "https://github.com/d3Ita"
+  },
+  "homepage": "https://github.com/d3Ita/prof-cours#readme",
+  "repository": "https://github.com/d3Ita/prof-cours",
+  "license": "MIT",
+  "icon": "./.claude-plugin/icon.png",
+  "keywords": ["enseignement", "education", "cours", "diapos", "powerpoint", "libreoffice", "evaluation", "pedagogie"]
+}
