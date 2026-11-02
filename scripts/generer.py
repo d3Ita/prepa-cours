@@ -4,15 +4,20 @@
 Usage : generer.py pptx|docx source.md sortie [--modele modele.pptx] [--themes themes.json] [--ecraser] [--outils dossier]
 
 --outils : dossier où installer python-pptx et python-docx au premier lancement.
+--sortie-format : format préféré. odp et odt remplacent le fichier, pdf et key s'y ajoutent.
 --themes : couleurs inventées pour certaines diapos, appliquées par une ligne « @theme: nom ».
 Les lignes « @theme » et « @dessin » sont ignorées avec un modèle d'établissement, qui décide seul de l'apparence.
 """
 import argparse
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import venv
 from pathlib import Path
+
+from convertir import REMPLACE, convertir, lire_format
 
 DEPENDANCES = ["python-pptx==1.0.2", "python-docx==1.2.0"]
 IMAGE = re.compile(r"!\[(.*?)\]\((.+?)\)")
@@ -239,11 +244,15 @@ def main():
     p.add_argument("--themes", type=Path)
     p.add_argument("--ecraser", action="store_true")
     p.add_argument("--outils", type=Path)
+    p.add_argument("--sortie-format")
     a = p.parse_args()
+    format_sortie = lire_format(a.sortie_format, a.format)
+    cible = a.sortie.with_suffix(f".{format_sortie}") if format_sortie else a.sortie
 
     # Le fichier a pu être retouché à la main : ne jamais l'écraser sans demande explicite.
-    if a.sortie.exists() and not a.ecraser:
-        sys.exit(f"{a.sortie} existe déjà. Sauvegardez-le, puis utilisez --ecraser si besoin.")
+    for existant in {a.sortie, cible}:
+        if existant.exists() and not a.ecraser:
+            sys.exit(f"{existant} existe déjà. Sauvegardez-le, puis utilisez --ecraser si besoin.")
     if (a.modele or a.themes) and a.format != "pptx":
         sys.exit("--modele et --themes ne fonctionnent qu'avec pptx.")
     if a.modele and not a.modele.is_file():
@@ -254,13 +263,23 @@ def main():
     texte = a.source.read_text(encoding="utf-8")
     a.sortie.parent.mkdir(parents=True, exist_ok=True)
     try:
-        if a.format == "pptx":
-            vers_pptx(texte, a.sortie, a.modele, a.source.resolve().parent, a.themes)
-        else:
-            vers_docx(texte, a.sortie)
+        with tempfile.TemporaryDirectory() as dossier:
+            # Le fichier n'apparaît qu'une fois complet : un échec de conversion ne laisse rien à moitié fait.
+            provisoire = Path(dossier) / f"{a.sortie.stem}.{a.format}"
+            if a.format == "pptx":
+                vers_pptx(texte, provisoire, a.modele, a.source.resolve().parent, a.themes)
+            else:
+                vers_docx(texte, provisoire)
+            erreur = convertir(provisoire, cible, format_sortie) if format_sortie else None
+            if format_sortie not in REMPLACE or erreur:
+                shutil.move(str(provisoire), str(a.sortie))
     except PermissionError:
         sys.exit(f"Impossible d'écrire {a.sortie} : fermez-le dans PowerPoint, Word ou LibreOffice.")
-    print(f"Créé : {a.sortie}")
+    print(f"Créé : {a.sortie}" if format_sortie not in REMPLACE or erreur else f"Créé : {cible}")
+    if format_sortie and not erreur and format_sortie not in REMPLACE:
+        print(f"Créé : {cible}")
+    if erreur:
+        print(f"⚠ Le fichier {format_sortie} n'a pas été créé : {erreur}. Le fichier {a.sortie.name} est conservé.")
 
 
 if __name__ == "__main__":

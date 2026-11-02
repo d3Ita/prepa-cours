@@ -312,6 +312,17 @@ Il vous faut [Claude Code](https://code.claude.com/docs), [Python 3](https://www
 
 Internet est nécessaire à la première génération de fichiers, pour installer `python-pptx` et `python-docx`. Le plugin peut vous demander votre dossier de cours à l'activation. Sinon, il vous le demandera à la première utilisation.
 
+## Formats de sortie
+
+Chaque utilisateur choisit ses formats dans les réglages du plugin, avec `/plugin configure prepa-cours@prepa-cours` :
+
+| Réglage | Choix | Effet |
+| --- | --- | --- |
+| Format des diapos | `pptx`, `odp`, `key`, `pdf` | `pptx` par défaut. `odp` le remplace. `key` et `pdf` s'y ajoutent |
+| Format des documents | `docx`, `odt`, `pdf` | `docx` par défaut. `odt` le remplace. `pdf` s'y ajoute |
+
+`odp`, `odt` et `pdf` demandent LibreOffice, et `key` demande Keynote sur Mac. Sur Mac, le `pdf` des diapos peut aussi passer par Keynote. Si la conversion échoue, le plugin le signale et garde le fichier `pptx` ou `docx`. Il ne modifie pas directement les fichiers `pdf` et `key` : après une retouche ciblée, il faut les régénérer.
+
 ## Utilisation
 
 Indiquez votre document (`.docx`, `.odt` ou `.txt`), votre classe, votre chapitre et vos heures :

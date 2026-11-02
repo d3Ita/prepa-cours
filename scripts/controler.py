@@ -8,6 +8,7 @@ import re
 import sys
 from pathlib import Path
 
+from convertir import SUFFIXES_SORTIE
 from evaluations import CHOIX_MINIMUM, OBJECTIF, lire_corrige, lire_sujet, verifier
 from generer import lire_diapos
 from redaction import blocage
@@ -142,9 +143,10 @@ def controler_livrables(chapitre, numeros, avec_evaluation):
     attendus = [m.format(n=n) for n in numeros for m in LIVRABLES_SEANCE]
     if avec_evaluation:
         attendus += LIVRABLES_EVALUATION
+    # Le format dépend du réglage de chaque utilisateur : seul le nom du fichier est imposé.
     problemes = [Probleme(f"Le fichier {f} est absent.", severite="critical",
                           etape="scenarios" if "scenario" in f else "livrables")
-                 for f in attendus if not (chapitre / f).is_file()]
+                 for f in attendus if not any((chapitre / f).with_suffix(s).is_file() for s in SUFFIXES_SORTIE)]
     # Après un nouveau découpage, un ancien fichier pourrait être distribué par erreur.
     for categorie in CATEGORIES:
         for chemin in sorted((chapitre / categorie).glob("seance-*")):

@@ -16,7 +16,7 @@ Demande fournie : `$ARGUMENTS`. Parle au prof de « documents », de « versions
 2. Demande ce qui manque : niveau, matière, public, longueur souhaitée, points à privilégier ou à laisser de côté.
 3. Copie ses documents : `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/redaction.py" demarrer --sources "<fichier>" "<fichier>"`. Les originaux ne sont ni déplacés ni modifiés.
 4. Lance l'agent `redacteur` avec le chapitre et ces consignes.
-5. Crée le document : `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/redaction.py" produire --outils "${CLAUDE_PLUGIN_DATA}"`. Il devient `Cours/cours.docx`, et ce document est désormais la seule référence.
+5. Crée le document : `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/redaction.py" produire --outils "${CLAUDE_PLUGIN_DATA}" --sortie-format "${user_config.format_documents}"`. Il devient `Cours/cours.docx` ou `Cours/cours.odt` selon le réglage du prof, et ce document est désormais la seule référence.
 6. Présente le plan, les manques et les points à vérifier, puis ouvre la période de révision.
 
 ## Période de révision

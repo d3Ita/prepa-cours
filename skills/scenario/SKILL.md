@@ -24,7 +24,7 @@ Niveau, durée de la séance, matériel nécessaire
 
 Génère ensuite la version à lire, en ajoutant `--ecraser` seulement si tu as sauvegardé avant et que le prof a demandé cette mise à jour :
 
-`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/generer.py" docx .travail/seance-N/scenario.md Cours/seance-N-scenario.docx --outils "${CLAUDE_PLUGIN_DATA}"`
+`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/generer.py" docx .travail/seance-N/scenario.md Cours/seance-N-scenario.docx --outils "${CLAUDE_PLUGIN_DATA}" --sortie-format "${user_config.format_documents}"`
 
 ## Règles
 

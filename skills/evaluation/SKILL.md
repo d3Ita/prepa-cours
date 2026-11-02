@@ -20,11 +20,13 @@ Le type de question par défaut est `question-ouverte`. Pour varier, ajoute une 
 
 Génère ensuite les fichiers à imprimer, le sujet dans `Evaluations` et le corrigé dans `Corrections` :
 
-`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/generer.py" docx .travail/evaluation.md Evaluations/evaluation.docx --outils "${CLAUDE_PLUGIN_DATA}"`
+`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/generer.py" docx .travail/evaluation.md Evaluations/evaluation.docx --outils "${CLAUDE_PLUGIN_DATA}" --sortie-format "${user_config.format_documents}"`
 
-`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/generer.py" docx .travail/corrige.md Corrections/evaluation-corrige.docx --outils "${CLAUDE_PLUGIN_DATA}"`
+`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/generer.py" docx .travail/corrige.md Corrections/evaluation-corrige.docx --outils "${CLAUDE_PLUGIN_DATA}" --sortie-format "${user_config.format_documents}"`
 
-Si un `.docx` existe déjà, sauvegarde avec `versions.py sauver`, demande au prof, puis ajoute `--ecraser` seulement s'il accepte.
+Le format suit le réglage de l'utilisateur, et seule l'extension peut changer. Si le script affiche `⚠`, dis au prof que ce format n'a pas pu être créé.
+
+Si le document existe déjà, sauvegarde avec `versions.py sauver`, demande au prof, puis ajoute `--ecraser` seulement s'il accepte.
 
 ## Règles
 

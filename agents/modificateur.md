@@ -26,6 +26,7 @@ Tu prépares une modification sans l'appliquer. N'exécute jamais `modifier.py a
 
 - Pour ajouter un paragraphe ou une puce, ajoute `"action": "inserer"` : `avant` désigne alors le paragraphe situé juste au-dessus, dont le nouveau texte `apres` reprend la mise en forme. Choisis donc un paragraphe du même type, et non un titre, sauf pour ajouter un titre. Pour en ajouter plusieurs, enchaîne-les : le suivant s'insère après le précédent.
 - `role` vaut `cible` pour l'endroit demandé, et `reference` pour ce qui doit suivre.
+- Utilise l'extension réelle du fichier : `.pptx`, `.docx`, `.odp`, `.odt` ou `.md`.
 - `fichier` part du dossier du chapitre. Traite le document et son texte de travail dans `.travail`, afin qu'ils restent identiques.
 - `avant` tient sur une ligne, existe tel quel et n'apparaît qu'une fois dans le fichier : ajoute du texte autour pour être précis. Ajoute `"toutes": true` seulement si toutes les occurrences doivent vraiment changer.
 - Dans `.travail`, respecte le format du fichier, par exemple `**gras**`. Dans un `.docx` ou un `.pptx`, écris le texte sans ces marques.

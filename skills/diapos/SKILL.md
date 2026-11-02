@@ -19,7 +19,9 @@ Travaille dans le dossier du chapitre. Lis `.travail/objectifs.md`, `${CLAUDE_PL
 
 Range les images du prof dans `Diapos/images/`. Génération :
 
-`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/generer.py" pptx .travail/seance-N/diapos.md Diapos/seance-N-diapos.pptx --outils "${CLAUDE_PLUGIN_DATA}"`
+`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/generer.py" pptx .travail/seance-N/diapos.md Diapos/seance-N-diapos.pptx --outils "${CLAUDE_PLUGIN_DATA}" --sortie-format "${user_config.format_diapos}"`
+
+Le format suit le réglage de chaque utilisateur : le nom du fichier ne change pas, seule son extension peut changer. `odp` et `odt` remplacent le fichier, tandis que `pdf` et `key` s'ajoutent à un fichier modifiable. Dans ce dernier cas, après une modification ciblée, la copie `pdf` ou `key` n'est plus à jour : régénère-la avec l'accord du prof. Si le script affiche `⚠`, dis au prof que ce format n'a pas pu être créé, et pourquoi.
 
 Si le chapitre a des thèmes, ajoute `--themes .travail/themes.json`. Ajoute `--modele fichier.pptx` si le prof a un modèle d'établissement : il décide alors seul de l'apparence, et n'invente aucun thème.
 

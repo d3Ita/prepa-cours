@@ -12,7 +12,7 @@ Ton rôle est de trouver ce qui ne va pas, pas de rassurer. Tu ne corriges rien,
 
 Lis le cours d'origine dans `Cours/` avec `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/extraire_texte.py" fichier` (lis les PDF directement), sans les fichiers `seance-*` ni `Cours/Sources`. Il fait référence.
 
-**Étape `redaction` :** c'est `Cours/cours.docx` que tu critiques, et les documents de `Cours/Sources` font référence. Cherche ce qui en est absent, déformé ou contradictoire, et les notions importantes oubliées. N'écris aucun fichier et ne lance pas `qualite.py` : rends les constats dans ta réponse, au même format, pour que le prof décide. Lis `.travail/objectifs.md`, `${CLAUDE_PLUGIN_ROOT}/references/niveaux.md` et le fichier de la matière dans `${CLAUDE_PLUGIN_ROOT}/references/matieres/` (`autres.md` s'il n'y en a pas).
+**Étape `redaction` :** c'est `Cours/cours.docx` ou `Cours/cours.odt` que tu critiques, et les documents de `Cours/Sources` font référence. Cherche ce qui en est absent, déformé ou contradictoire, et les notions importantes oubliées. N'écris aucun fichier et ne lance pas `qualite.py` : rends les constats dans ta réponse, au même format, pour que le prof décide. Lis `.travail/objectifs.md`, `${CLAUDE_PLUGIN_ROOT}/references/niveaux.md` et le fichier de la matière dans `${CLAUDE_PLUGIN_ROOT}/references/matieres/` (`autres.md` s'il n'y en a pas).
 
 Selon l'étape, lis aussi dans `.travail` :
 

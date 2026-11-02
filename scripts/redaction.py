@@ -21,6 +21,7 @@ from pathlib import Path
 from extraire_texte import extraire
 
 COURS = Path("Cours") / "cours.docx"
+COURS_ODT = Path("Cours") / "cours.odt"
 SOURCES = Path("Cours") / "Sources"
 BROUILLON = Path(".travail") / "revue" / "cours-brouillon.md"
 ETAT = Path(".travail") / "revue" / "redaction.json"
@@ -38,9 +39,17 @@ def ecrire_etat(chapitre, etat):
     chemin.write_text(json.dumps(etat, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def chemin_cours(chapitre):
+    """Le cours peut être un .docx ou un .odt selon le réglage du prof. Renvoie None s'il n'existe pas."""
+    for chemin in (Path(chapitre) / COURS, Path(chapitre) / COURS_ODT):
+        if chemin.is_file():
+            return chemin
+    return None
+
+
 def empreinte(chapitre):
-    chemin = Path(chapitre) / COURS
-    return hashlib.sha256(chemin.read_bytes()).hexdigest() if chemin.is_file() else None
+    chemin = chemin_cours(chapitre)
+    return hashlib.sha256(chemin.read_bytes()).hexdigest() if chemin else None
 
 
 def statut(chapitre):
@@ -87,28 +96,34 @@ def demarrer(chapitre, sources):
     print(f"{len(fichiers)} document(s) copié(s) dans {SOURCES.as_posix()}.")
 
 
-def produire(chapitre, outils):
+def produire(chapitre, outils, format_sortie=None):
     """Crée le document du cours depuis le brouillon de l'agent, puis retire ce brouillon :
     le document devient l'unique référence, que le prof peut retoucher librement."""
     brouillon = Path(chapitre) / BROUILLON
     cours = Path(chapitre) / COURS
     if not brouillon.is_file():
         sys.exit(f"Aucun brouillon : {BROUILLON.as_posix()} est absent.")
-    if cours.exists():
-        sys.exit(f"{COURS.as_posix()} existe déjà : modifiez-le sans le recréer, pour garder les retouches du prof.")
+    existant = chemin_cours(chapitre)
+    if existant:
+        sys.exit(f"{existant.relative_to(chapitre).as_posix()} existe déjà : modifiez-le sans le recréer, pour garder les retouches du prof.")
     generer = Path(__file__).resolve().parent / "generer.py"
     commande = [sys.executable, str(generer), "docx", str(brouillon), str(cours)]
     if outils:
         commande += ["--outils", outils]
+    # Le cours se révise longuement : il reste toujours modifiable, et un PDF n'en serait qu'une copie à part.
+    if format_sortie and format_sortie.strip().lstrip(".").casefold() == "odt":
+        commande += ["--sortie-format", "odt"]
     r = subprocess.run(commande, capture_output=True, text=True, encoding="utf-8")
     if r.returncode:
         sys.exit(f"Création impossible : {r.stderr.strip()}")
+    if "⚠" in r.stdout:
+        print(r.stdout.strip())
     brouillon.unlink()
     etat = lire_etat(chapitre) or {"statut": "en_cours", "debut": time.strftime("%Y-%m-%dT%H:%M:%S"), "validations": []}
     etat["statut"] = "en_cours"
     ecrire_etat(chapitre, etat)
     sauvegarder(chapitre, "Première version du cours")
-    print(f"Créé : {COURS.as_posix()}")
+    print(f"Créé : {chemin_cours(chapitre).relative_to(chapitre).as_posix()}")
 
 
 def lire_sources(chapitre):
@@ -128,7 +143,7 @@ def lire_sources(chapitre):
 def analyser(chapitre):
     from qualite import termes_suspects
 
-    lignes = extraire(Path(chapitre) / COURS)
+    lignes = extraire(chemin_cours(chapitre))
     source, non_lus = lire_sources(chapitre)
     a_verifier = [l for l in lignes if A_VERIFIER in l]
     suspects = {}
@@ -150,7 +165,7 @@ def etat(chapitre):
         print("STATUS: EN_ATTENTE_DU_PREMIER_DOCUMENT")
         return
     a = analyser(chapitre)
-    print(f"Cours : {COURS.as_posix()} ({a['mots']} mots)")
+    print(f"Cours : {chemin_cours(chapitre).relative_to(chapitre).as_posix()} ({a['mots']} mots)")
     if a["a_verifier"]:
         print(f"\n{len(a['a_verifier'])} point(s) à vérifier :")
         for ligne in a["a_verifier"]:
@@ -169,7 +184,7 @@ def etat(chapitre):
 def valider(chapitre, malgre_a_verifier):
     """À lancer seulement après la réponse explicite du prof."""
     if empreinte(chapitre) is None:
-        sys.exit(f"{COURS.as_posix()} est absent : rien à valider.")
+        sys.exit(f"{COURS.as_posix()} est absent, comme {COURS_ODT.as_posix()} : rien à valider.")
     etat_actuel = lire_etat(chapitre)
     if etat_actuel is None:
         sys.exit("Aucune rédaction suivie dans ce chapitre.")
@@ -210,6 +225,7 @@ def main():
             c.add_argument("--sources", nargs="+", required=True)
         if nom == "produire":
             c.add_argument("--outils")
+            c.add_argument("--sortie-format")
         if nom == "valider":
             c.add_argument("--malgre-a-verifier", action="store_true")
     a = p.parse_args()
@@ -218,7 +234,7 @@ def main():
     if a.commande == "demarrer":
         demarrer(a.chapitre, a.sources)
     elif a.commande == "produire":
-        produire(a.chapitre, a.outils)
+        produire(a.chapitre, a.outils, a.sortie_format)
     elif a.commande == "etat":
         etat(a.chapitre)
     elif a.commande == "valider":

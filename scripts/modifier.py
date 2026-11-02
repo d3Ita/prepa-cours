@@ -29,7 +29,7 @@ SUFFIXES_OOXML = (".docx", ".pptx")
 SUFFIXES_ODF = (".odt", ".odp")
 SUFFIXES = SUFFIXES_TEXTE + SUFFIXES_OOXML + SUFFIXES_ODF
 # Ces formats peuvent contenir une référence, mais le script ne sait ni les lire ni les modifier.
-SUFFIXES_NON_LUS = (".pdf", ".doc", ".ppt", ".rtf", ".xlsx", ".ods")
+SUFFIXES_NON_LUS = (".pdf", ".key", ".doc", ".ppt", ".rtf", ".xlsx", ".ods")
 # Sources : les documents d'origine fournis par le prof ne doivent jamais être modifiés.
 DOSSIERS_IGNORES = {".git", "revue", "Sources"}
 PARTIES_OOXML = re.compile(r"word/(document|header\d*|footer\d*|footnotes|endnotes)\.xml"
