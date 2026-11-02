@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Génère un .pptx ou un .docx à partir du Markdown simple du plugin.
 
-Usage : generer.py pptx|docx source.md sortie [--modele modele.pptx] [--ecraser] [--outils dossier]
+Usage : generer.py pptx|docx source.md sortie [--modele modele.pptx] [--themes themes.json] [--ecraser] [--outils dossier]
 
 --outils : dossier où installer python-pptx et python-docx au premier lancement.
+--themes : couleurs inventées pour certaines diapos, appliquées par une ligne « @theme: nom ».
+Les lignes « @theme » et « @dessin » sont ignorées avec un modèle d'établissement, qui décide seul de l'apparence.
 """
 import argparse
 import re
@@ -15,6 +17,8 @@ from pathlib import Path
 DEPENDANCES = ["python-pptx==1.0.2", "python-docx==1.2.0"]
 IMAGE = re.compile(r"!\[(.*?)\]\((.+?)\)")
 REPONSE = re.compile(r"\[réponse\s*:\s*(\d+)\]", re.IGNORECASE)
+THEME = re.compile(r"@theme\s*:\s*([\w-]+)", re.IGNORECASE)
+DESSIN = re.compile(r"@dessin\s*:\s*(.+)", re.IGNORECASE)
 MARGE_IMAGE = 0.05
 
 
@@ -53,11 +57,15 @@ def lire_diapos(texte):
     for ligne in texte.splitlines():
         propre = ligne.strip()
         if propre.startswith("# "):
-            diapos.append({"titre": propre[2:].strip(), "puces": [], "notes": [], "image": None})
+            diapos.append({"titre": propre[2:].strip(), "puces": [], "notes": [], "image": None, "theme": None, "dessin": []})
         elif not propre or set(propre) == {"-"}:
             continue
         elif not diapos:
             sys.exit(f"Le texte doit commencer par un titre « # » : {propre}")
+        elif THEME.fullmatch(propre):
+            diapos[-1]["theme"] = THEME.fullmatch(propre).group(1)
+        elif DESSIN.fullmatch(propre):
+            diapos[-1]["dessin"].append(DESSIN.fullmatch(propre).group(1))
         elif propre.startswith(">"):
             diapos[-1]["notes"].append(propre[1:].strip())
         elif IMAGE.fullmatch(propre):
@@ -92,15 +100,41 @@ def placer_image(prs, diapo, corps, chemin, avec_texte):
     image.left = gauche + (largeur - image.width) // 2
 
 
-def vers_pptx(texte, sortie, modele, base):
+def declarer_masque_notes(prs):
+    """python-pptx crée le masque des notes sans le déclarer : Keynote et l'aperçu de macOS bloquent alors sur le fichier."""
+    from lxml import etree
+    from pptx.opc.constants import RELATIONSHIP_TYPE
+    from pptx.oxml.ns import qn
+
+    presentation = prs.part._element
+    if presentation.find(qn("p:notesMasterIdLst")) is not None:
+        return
+    liste = etree.Element(qn("p:notesMasterIdLst"))
+    etree.SubElement(liste, qn("p:notesMasterId")).set(
+        qn("r:id"), prs.part.relate_to(prs.part.notes_master_part, RELATIONSHIP_TYPE.NOTES_MASTER))
+    presentation.find(qn("p:sldMasterIdLst")).addnext(liste)
+
+
+def vers_pptx(texte, sortie, modele, base, chemin_themes=None):
     from pptx import Presentation
+
+    import design
 
     diapos = lire_diapos(texte)
     for contenu in diapos:
         if contenu["image"] and not (base / contenu["image"]).is_file():
             sys.exit(f"Image introuvable : {contenu['image']} (diapo « {contenu['titre']} »).")
+    # Un modèle d'établissement décide seul de l'apparence : les thèmes inventés ne s'y appliquent pas.
+    themes = design.lire_themes(chemin_themes) if chemin_themes and not modele else {}
+    if not modele:
+        for contenu in diapos:
+            if contenu["theme"] and contenu["theme"] not in themes:
+                sys.exit(f"Thème inconnu : {contenu['theme']} (diapo « {contenu['titre']} »). Indiquez-le dans le fichier passé à --themes.")
+            design.lire_dessin(contenu)
 
     prs = Presentation(modele) if modele else Presentation()
+    if not modele:
+        design.appliquer_base(prs)
     # Un modèle d'établissement contient souvent des diapos d'exemple à retirer.
     ids = prs.slides._sldIdLst
     for diapo in list(ids):
@@ -118,6 +152,11 @@ def vers_pptx(texte, sortie, modele, base):
                       if p.placeholder_format.idx != 0 and p.has_text_frame), None)
         if contenu["puces"] and corps is None:
             sys.exit(f"Le modèle n'a pas de zone de texte (mise en page « {page.name} »).")
+        if not modele:
+            design.composer(diapo, i, contenu, corps, base, themes, morceaux)
+            if contenu["notes"]:
+                diapo.notes_slide.notes_text_frame.text = "\n".join(contenu["notes"])
+            continue
         for j, (niveau, puce) in enumerate(contenu["puces"]):
             para = corps.text_frame.paragraphs[0] if j == 0 else corps.text_frame.add_paragraph()
             para.level = niveau
@@ -133,6 +172,8 @@ def vers_pptx(texte, sortie, modele, base):
             corps._element.getparent().remove(corps._element)
         if contenu["notes"]:
             diapo.notes_slide.notes_text_frame.text = "\n".join(contenu["notes"])
+    if any(contenu["notes"] for contenu in diapos):
+        declarer_masque_notes(prs)
     prs.save(sortie)
 
 
@@ -195,6 +236,7 @@ def main():
     p.add_argument("source", type=Path)
     p.add_argument("sortie", type=Path)
     p.add_argument("--modele", type=Path)
+    p.add_argument("--themes", type=Path)
     p.add_argument("--ecraser", action="store_true")
     p.add_argument("--outils", type=Path)
     a = p.parse_args()
@@ -202,8 +244,8 @@ def main():
     # Le fichier a pu être retouché à la main : ne jamais l'écraser sans demande explicite.
     if a.sortie.exists() and not a.ecraser:
         sys.exit(f"{a.sortie} existe déjà. Sauvegardez-le, puis utilisez --ecraser si besoin.")
-    if a.modele and a.format != "pptx":
-        sys.exit("--modele ne fonctionne qu'avec pptx.")
+    if (a.modele or a.themes) and a.format != "pptx":
+        sys.exit("--modele et --themes ne fonctionnent qu'avec pptx.")
     if a.modele and not a.modele.is_file():
         sys.exit(f"Modèle introuvable : {a.modele}")
     if not a.source.is_file():
@@ -213,7 +255,7 @@ def main():
     a.sortie.parent.mkdir(parents=True, exist_ok=True)
     try:
         if a.format == "pptx":
-            vers_pptx(texte, a.sortie, a.modele, a.source.resolve().parent)
+            vers_pptx(texte, a.sortie, a.modele, a.source.resolve().parent, a.themes)
         else:
             vers_docx(texte, a.sortie)
     except PermissionError:

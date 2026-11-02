@@ -27,6 +27,27 @@ class TestScripts(unittest.TestCase):
         for attendu in ("Mon cours", "Partie 1", "Idée A", "Détail", "Note secrète"):
             self.assertIn(attendu, texte)
 
+    def masque_notes_declare(self, chemin):
+        import zipfile
+
+        with zipfile.ZipFile(chemin) as z:
+            xml = z.read("ppt/presentation.xml").decode("utf-8")
+        return xml.count("<p:notesMasterId "), xml.find("notesMasterIdLst") > xml.find("sldMasterIdLst") and xml.find("notesMasterIdLst") < xml.find("sldIdLst")
+
+    def test_masque_des_notes_declare_pour_keynote(self):
+        (self.d / "d.md").write_text(DIAPOS, encoding="utf-8")
+        self.assertEqual(lancer("generer.py", "pptx", "d.md", "d.pptx", dossier=self.d).returncode, 0)
+        self.assertEqual(self.masque_notes_declare(self.d / "d.pptx"), (1, True))
+        # Un modèle qui le déclare déjà ne doit pas le déclarer deux fois.
+        r = lancer("generer.py", "pptx", "d.md", "s.pptx", "--modele", "d.pptx", dossier=self.d)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(self.masque_notes_declare(self.d / "s.pptx"), (1, True))
+
+    def test_sans_notes_aucun_masque_ajoute(self):
+        (self.d / "d.md").write_text("# Titre\n- Idée\n", encoding="utf-8")
+        self.assertEqual(lancer("generer.py", "pptx", "d.md", "d.pptx", dossier=self.d).returncode, 0)
+        self.assertEqual(self.masque_notes_declare(self.d / "d.pptx")[0], 0)
+
     def test_modele_remplace_les_diapos_exemple(self):
         from pptx import Presentation
 
@@ -92,8 +113,8 @@ class TestScripts(unittest.TestCase):
             self.assertEqual(len(images), 1)
             self.assertLessEqual(images[0].left + images[0].width, prs.slide_width)
             self.assertLessEqual(images[0].top + images[0].height, prs.slide_height)
-        runs = list(prs.slides[1].placeholders[1].text_frame.paragraphs[0].runs)
-        self.assertEqual([(r.text, r.font.bold) for r in runs], [("Mot ", None), ("fort", True)])
+        carte = next(s for s in prs.slides[1].shapes if s.has_text_frame and "fort" in s.text_frame.text)
+        self.assertEqual([(r.text, bool(r.font.bold)) for r in carte.text_frame.paragraphs[0].runs], [("Mot ", False), ("fort", True)])
         self.assertEqual(len(list(prs.slides[3].placeholders)), 1)
 
     def test_image_absente_ne_cree_pas_de_fichier(self):

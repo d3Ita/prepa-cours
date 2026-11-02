@@ -95,6 +95,10 @@ def verifier_sources(chapitre, etape):
     for chemin in fichiers_produits(chapitre, etape):
         lieu = chemin.relative_to(dossier).as_posix()
         for ligne in chemin.read_text(encoding="utf-8").splitlines():
+            # Une ligne de dessin contient des coordonnées : seul le texte d'une étiquette vient du cours.
+            ligne = re.sub(r"^@dessin\s*:\s*etiquette(?:\s+\S+){3}\s+", "Étiquette : ", ligne)
+            if ligne.startswith("@"):
+                continue
             if A_VERIFIER in ligne:
                 constats.append(constat("info", "hallucination", lieu, "Information marquée à vérifier par le prof.",
                                         ligne.strip(), provenance="incertaine"))

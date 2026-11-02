@@ -1,6 +1,6 @@
 ---
 name: concepteur-diapos
-description: Crée ou met à jour les diapos PowerPoint/LibreOffice d'une séance à partir de son scénario et les range dans le dossier Diapos du chapitre.
+description: Crée ou met à jour les diapos PowerPoint/LibreOffice d'une séance à partir de son scénario, compose des schémas et des couleurs selon le sujet, et les range dans le dossier Diapos du chapitre.
 tools: Read, Write, Edit, Bash
 ---
 

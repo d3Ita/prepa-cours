@@ -7,7 +7,7 @@
 
 *A human-in-the-loop multi-agent LLM system for pedagogical course preparation. This Claude Code plugin organizes a teacher's courses, fits a course to a subject and a given number of hours and sessions, then produces a lesson plan, slides and a 5-question quiz for each session, with version history. The plugin speaks French.*
 
-> **Version 0.9 : préversion.** Les scripts sont testés automatiquement, mais le parcours complet avec les agents n'a pas encore été éprouvé sur de vrais cours. Le score qualité aide à repérer des problèmes, il ne garantit pas l'exactitude. Relisez toujours ce qui est produit, surtout les corrigés, avant de l'utiliser en classe.
+> **Version 0.10 : préversion.** Les scripts sont testés automatiquement, mais le parcours complet avec les agents n'a pas encore été éprouvé sur de vrais cours. Le score qualité aide à repérer des problèmes, il ne garantit pas l'exactitude. Relisez toujours ce qui est produit, surtout les corrigés, avant de l'utiliser en classe.
 
 ## Vos cours bien rangés
 
@@ -358,7 +358,7 @@ Vos retouches sont protégées : le plugin n'écrase jamais un fichier existant 
 - Les sauvegardes ne protègent pas d'une panne de disque : copiez aussi le dossier de cours ailleurs.
 - La comparaison de versions porte sur le texte, pas sur les images ni la mise en forme.
 - Deux versions modifiées en parallèle ne peuvent pas être fusionnées automatiquement.
-- Les diapos sont au format `.pptx`, que LibreOffice ouvre. Le rendu peut varier selon le logiciel et le modèle utilisé.
+- Les diapos sont au format `.pptx`, que PowerPoint, Keynote et LibreOffice ouvrent. Sans modèle d'établissement, elles suivent un style « cahier d'exposé » en 16:9 : notes scotchées, schémas composés à partir de formes simples, et couleurs adaptées au sujet avec un contrôle automatique du contraste. L'agent ne crée pas d'illustrations détaillées, et il ne voit pas le rendu de ses dessins : regardez-les. Le rendu peut varier selon le logiciel et les polices installées.
 - Le plugin n'invente pas d'images : il utilise celles que vous fournissez.
 - Il a été conçu pour Claude Code. L'usage sur claude.ai ou Cowork n'a pas été testé.
 
