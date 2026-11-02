@@ -11,8 +11,8 @@ import re
 import sys
 from pathlib import Path
 
-from controler import SEANCE, lire
-from evaluations import OBJECTIF, lire_corrige
+from controler import SEANCE, lire, minutes
+from evaluations import OBJECTIF, lire_corrige, lire_sujet
 from generer import lire_diapos
 
 ETAPES = ("decoupage", "scenarios", "livrables")
@@ -25,7 +25,7 @@ NOMS_LIENS = {"seances": "séance", "activites": "activité", "diapos": "diapo",
               "exercices": "exercice", "evaluations": "évaluation"}
 PRATIQUE = re.compile(r"activité|exercice|atelier|\btp\b|\btd\b|manipulation|problème|étude de cas|mise en pratique",
                       re.IGNORECASE)
-MINUTAGE = re.compile(r"\d+\s*[-–]\s*\d+\s*min")
+MINUTAGE = re.compile(r"(\d+)\s*[-–]\s*(\d+)\s*min")
 
 
 def lire_phases(scenario):
@@ -35,39 +35,74 @@ def lire_phases(scenario):
             for titre, corps in zip(parties[1::2], parties[2::2])]
 
 
-def construire(chapitre):
-    """Renvoie {objectif : {texte, notions, seances, activites, diapos, exercices, evaluations}}."""
+def lire_questions(sujet, corrige, type_defaut):
+    """Fusionne le sujet et le corrigé en une entrée par numéro de question."""
+    types = {q.numero: q.type for q in lire_sujet(sujet or "", type_defaut)}
+    questions = {}
+    for reponse in lire_corrige(corrige or ""):
+        entree = questions.setdefault(reponse.numero, {"numero": reponse.numero, "objectifs": [],
+                                                       "type": types.get(reponse.numero, type_defaut)})
+        entree["objectifs"] += [o for o in reponse.objectifs if o not in entree["objectifs"]]
+    for numero, type_question in types.items():
+        questions.setdefault(numero, {"numero": numero, "objectifs": [], "type": type_question})
+    return [questions[n] for n in sorted(questions)]
+
+
+def parcourir(chapitre):
+    """Lit les textes de .travail une seule fois : la matrice et le modèle de cours en sont deux vues."""
     dossier = Path(chapitre) / ".travail"
     objectifs_md = lire(dossier / "objectifs.md") or ""
-    matrice = {}
-    for objectif, texte, notions in re.findall(
-            r"^[-*\s]*(OBJ\d+)\s*:\s*(.*)$(?:\n[-*\s]*Notions\s*:\s*(.*)$)?", objectifs_md, re.MULTILINE):
-        matrice[objectif] = {"texte": texte.strip(), "notions": [n.strip() for n in notions.split(",") if n.strip()],
-                             "seances": [], "activites": [], "diapos": [], "exercices": [], "evaluations": []}
+    objectifs = [{"id": objectif, "texte": texte.strip(), "notions": [n.strip() for n in notions.split(",") if n.strip()]}
+                 for objectif, texte, notions in re.findall(
+                     r"^[-*\s]*(OBJ\d+)\s*:\s*(.*)$(?:\n[-*\s]*Notions\s*:\s*(.*)$)?", objectifs_md, re.MULTILINE)]
+    seances = []
+    activite = exercice = 0
+    for numero, duree, objectifs_texte in SEANCE.findall(objectifs_md):
+        dossier_seance = dossier / f"seance-{numero}"
+        activites = []
+        for titre, corps, _ in lire_phases(lire(dossier_seance / "scenario.md") or ""):
+            activite += 1
+            pratique = bool(PRATIQUE.search(titre))
+            exercice += pratique
+            temps = MINUTAGE.match(titre)
+            activites.append({"numero": activite, "exercice": exercice if pratique else None, "titre": titre,
+                              "debut": int(temps.group(1)) if temps else None, "fin": int(temps.group(2)) if temps else None,
+                              "objectifs": sorted(set(OBJECTIF.findall(corps)), key=lambda o: int(o[3:]))})
+        diapos = lire(dossier_seance / "diapos.md")
+        seances.append({
+            "numero": int(numero), "duree": minutes(duree), "objectifs": OBJECTIF.findall(objectifs_texte), "activites": activites,
+            "diapos": [{"numero": i, "titre": c["titre"], "objectifs": sorted(set(OBJECTIF.findall(" ".join(c["notes"]))))}
+                       for i, c in enumerate(lire_diapos(diapos) if diapos else [], 1)],
+            "questions": lire_questions(lire(dossier_seance / "qcm.md"), lire(dossier_seance / "qcm-corrige.md"), "qcm"),
+        })
+    return {"objectifs_md": objectifs_md, "objectifs": objectifs, "seances": seances,
+            "evaluation": lire_questions(lire(dossier / "evaluation.md"), lire(dossier / "corrige.md"), "question-ouverte")}
+
+
+def construire(chapitre):
+    """Renvoie {objectif : {texte, notions, seances, activites, diapos, exercices, evaluations}}."""
+    donnees = parcourir(chapitre)
+    matrice = {o["id"]: {"texte": o["texte"], "notions": o["notions"], "seances": [], "activites": [], "diapos": [],
+                         "exercices": [], "evaluations": []} for o in donnees["objectifs"]}
 
     def ajouter(objectifs, lien, valeur):
         for objectif in set(objectifs):
             if objectif in matrice and valeur not in matrice[objectif][lien]:
                 matrice[objectif][lien].append(valeur)
 
-    activite = exercice = 0
-    for numero, _, objectifs_texte in SEANCE.findall(objectifs_md):
-        ajouter(OBJECTIF.findall(objectifs_texte), "seances", int(numero))
-        seance = dossier / f"seance-{numero}"
-        for titre, corps, _ in lire_phases(lire(seance / "scenario.md") or ""):
-            activite += 1
-            cites = OBJECTIF.findall(corps)
-            ajouter(cites, "activites", f"ACT-{activite:02d}")
-            if PRATIQUE.search(titre):
-                exercice += 1
-                ajouter(cites, "exercices", f"EX-{exercice:02d}")
-        diapos = lire(seance / "diapos.md")
-        for i, contenu in enumerate(lire_diapos(diapos) if diapos else [], 1):
-            ajouter(OBJECTIF.findall(" ".join(contenu["notes"])), "diapos", f"S{numero}:{i}")
-        for reponse in lire_corrige(lire(seance / "qcm-corrige.md") or ""):
-            ajouter(reponse.objectifs, "evaluations", f"S{numero}-QCM-{reponse.numero}")
-    for reponse in lire_corrige(lire(dossier / "corrige.md") or ""):
-        ajouter(reponse.objectifs, "evaluations", f"EVAL-{reponse.numero}")
+    for seance in donnees["seances"]:
+        numero = seance["numero"]
+        ajouter(seance["objectifs"], "seances", numero)
+        for activite in seance["activites"]:
+            ajouter(activite["objectifs"], "activites", f"ACT-{activite['numero']:02d}")
+            if activite["exercice"]:
+                ajouter(activite["objectifs"], "exercices", f"EX-{activite['exercice']:02d}")
+        for diapo in seance["diapos"]:
+            ajouter(diapo["objectifs"], "diapos", f"S{numero}:{diapo['numero']}")
+        for question in seance["questions"]:
+            ajouter(question["objectifs"], "evaluations", f"S{numero}-QCM-{question['numero']}")
+    for question in donnees["evaluation"]:
+        ajouter(question["objectifs"], "evaluations", f"EVAL-{question['numero']}")
     return dict(sorted(matrice.items(), key=lambda e: int(e[0][3:])))
 
 
