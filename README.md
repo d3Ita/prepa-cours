@@ -7,7 +7,7 @@
 
 *Claude Code plugin that organizes a teacher's courses by level, class and chapter, and fits a course to a subject and a given number of hours and sessions, then produces a lesson plan, slides and a 5-question quiz for each session, with version history. The plugin speaks French.*
 
-> **Version 0.5 : préversion.** Les scripts sont testés automatiquement, mais le parcours complet avec les agents n'a pas encore été éprouvé sur de vrais cours. Relisez toujours ce qui est produit, surtout les corrigés, avant de l'utiliser en classe.
+> **Version 0.6 : préversion.** Les scripts sont testés automatiquement, mais le parcours complet avec les agents n'a pas encore été éprouvé sur de vrais cours. Le score qualité aide à repérer des problèmes, il ne garantit pas l'exactitude. Relisez toujours ce qui est produit, surtout les corrigés, avant de l'utiliser en classe.
 
 ## Vos cours bien rangés
 
@@ -27,31 +27,154 @@ Dossier de cours/
 
 Vous pouvez demander à tout moment : « montre-moi mes cours de Terminale », « range ces fichiers » ou « réutilise ce chapitre pour la Terminale 3 ». Le plugin vous montre son classement avant de ranger des fichiers existants, les copie par défaut et ne supprime rien. Vous pouvez aussi lancer `/prepa-cours:organiser`.
 
-## Comment ça marche
+## Architecture
 
-```mermaid
-flowchart LR
-    Z[Niveau, classe, chapitre] --> A[Votre cours]
-    A --> B[Découpage en séances]
-    B --> V1{Votre validation}
-    V1 --> C[Scénario de chaque séance]
-    C --> V2{Votre validation}
-    V2 --> D[Diapos .pptx]
-    V2 --> E[QCM et corrigé .docx]
-    D --> F[Contrôle de cohérence]
-    E --> F
-    F --> G[Sauvegarde]
+Le découpage, les scénarios puis les diapos et évaluations passent chacun par ce parcours :
+
+```text
+Source Course
+     ↓
+Analyzer                skill decoupage
+     ↓
+Pedagogical Planner     skill decoupage, objectifs et matrice
+     ↓
+Generator               agents scenariste, concepteur-diapos, evaluateur
+     ↓
+Critic                  agent critique
+     ↓
+Revision                l'agent qui a produit le document, limité par qualite.py
+     ↓
+Quality Evaluator       controler.py, matrice.py, qualite.py
+     ↓
+Human Validation        le prof : Valider, Modifier ou Relancer
+     ↓
+Final Outputs           Cours, Diapos, QCM, Evaluations, Corrections
 ```
 
-| Rôle | Ce qu'il fait |
+Le projet n'ajoute qu'un agent. Ce que du code peut vérifier de façon fiable (minutage, format, couverture, limite de révisions) reste dans les scripts ; le jugement sur le fond revient à l'agent `critique` ; la décision revient au prof.
+
+| Commande | Ce qu'elle fait |
 | --- | --- |
-| **Superviseur** (`/prepa-cours:cours`) | Enchaîne les étapes, attend votre validation et contrôle la cohérence |
-| **Organisation** (`/prepa-cours:organiser`) | Classe vos cours par niveau, classe et chapitre, et réutilise un chapitre pour une autre classe |
-| **Découpage** (`/prepa-cours:decoupage`) | Adapte le cours à vos heures et à vos séances, ou réajuste un découpage existant |
-| **Scénariste** | Écrit le déroulé minuté de chaque séance, côté prof et côté élèves |
-| **Concepteur de diapos** | Crée les diapos et les notes du présentateur, avec le modèle de votre établissement si vous en avez un |
-| **Évaluateur** | Crée le QCM de 5 questions de chaque séance et son corrigé, et une évaluation finale si vous en voulez une |
-| **Versions** (`/prepa-cours:versions`) | Sauvegarde, compare et restaure vos fichiers |
+| `/prepa-cours:cours` | Enchaîne les étapes, attend votre validation et contrôle la cohérence |
+| `/prepa-cours:organiser` | Classe vos cours par niveau, classe et chapitre, et réutilise un chapitre pour une autre classe |
+| `/prepa-cours:decoupage` | Adapte le cours à vos heures et à vos séances, ou réajuste un découpage existant |
+| `/prepa-cours:critique` | Lance une critique des documents d'une étape |
+| `/prepa-cours:versions` | Sauvegarde, compare et restaure vos fichiers |
+
+### Agents
+
+| Agent | Rôle | Entrées | Sorties | Limites |
+| --- | --- | --- | --- | --- |
+| `scenariste` | Écrit le déroulé minuté d'une séance | Cours, objectifs, niveau, matière, constats éventuels | `scenario.md`, `Cours/seance-N-scenario.docx` | Le temps prévu reste une estimation |
+| `concepteur-diapos` | Crée les diapos et les notes | Scénario, objectifs, constats éventuels | `diapos.md`, `Diapos/seance-N-diapos.pptx` | N'invente pas d'images, n'écrase pas vos retouches |
+| `evaluateur` | Crée les QCM, les corrigés et l'évaluation finale demandée | Scénario, objectifs, constats éventuels | `qcm.md`, `qcm-corrige.md`, `evaluation.md`, `corrige.md` et leurs `.docx` | Ne corrige pas de copies d'élèves |
+| `critique` | Cherche les problèmes des autres agents | Cours d'origine, documents de l'étape, rapports des scripts | `.travail/revue/critique.json` | Ne corrige rien, n'approuve rien, et peut manquer des erreurs |
+
+### Boucle de critique
+
+```text
+generate → critic → revise → critic → … → validation humaine
+```
+
+1. L'agent `critique` écrit ses constats, chacun avec une gravité, une catégorie (`factual`, `pedagogical`, `timing`, `coherence`, `evaluation`, `hallucination`), un lieu, un problème, une preuve et une suggestion.
+2. `qualite.py decider` choisit la suite. S'il reste un problème, l'agent responsable le corrige, puis la critique recommence.
+3. Après `max_revision_cycles` corrections par étape (2 par défaut, de 0 à 5 dans les réglages du plugin), la boucle s'arrête :
+
+```text
+⚠ Révision maximale atteinte.
+Une validation humaine est requise.
+```
+
+Une critique qui ne détaille pas ses six contrôles, mal formée ou plus ancienne que les documents n'est pas prise en compte.
+
+### Validation humaine
+
+Rien n'est considéré comme validé sans votre réponse. À chaque étape importante, le plugin affiche par exemple :
+
+```text
+Découpage terminé.
+
+Quality score: 87/100
+
+⚠ 2 warning(s)
+
+[1] Valider
+[2] Modifier
+[3] Relancer l'analyse
+```
+
+Votre réponse est enregistrée dans `.travail/revue/validations.json`. Toute modification ultérieure annule la validation de l'étape. Vous gardez le dernier mot, même en présence d'un problème signalé.
+
+### Score qualité
+
+```text
+QUALITY SCORE
+
+Global          84/100
+Exactitude      92/100
+Objectifs       88/100
+Cohérence       86/100
+Progression     79/100
+Timing          72/100
+Évaluation      85/100
+```
+
+| Dimension | Ce qui la fait baisser |
+| --- | --- |
+| Exactitude | Constats `factual` et `hallucination` |
+| Objectifs | Liens manquants dans la matrice : c'est la couverture moyenne |
+| Cohérence | Constats `coherence` et fichiers absents |
+| Progression | Constats `pedagogical` |
+| Timing | Constats `timing` |
+| Évaluation | Constats `evaluation` |
+
+Chaque dimension part de 100 et perd 40 points par problème `critical`, 12 par `warning` et 3 par `info`. Le score global est leur moyenne, plafonnée à 69 s'il reste un problème bloquant. Chaque point perdu est expliqué :
+
+```text
+Timing : 76/100
+- Le scénario dure 77 min pour une séance de 60 min (seance-2)
+- La phase « Activité » n'a pas de temps défini (seance-4)
+```
+
+Ces poids sont un choix de conception, pas une mesure validée. Sans critique, Exactitude et Progression restent « non évaluées », et le score est présenté comme partiel. Le statut vaut `HUMAN_REVIEW_REQUIRED`, `READY_FOR_HUMAN_VALIDATION` ou, seulement après votre réponse, `HUMAN_VALIDATED`.
+
+### Matrice pédagogique
+
+```text
+Objective → Activity → Exercise → Evaluation
+```
+
+`matrice.py` suit chaque objectif à partir des fichiers existants, sans format supplémentaire :
+
+```text
+OBJ1 : Décrire le rôle de l'estomac.
+ ├── notions : estomac, sucs digestifs
+ ├── séances : 1
+ ├── activités : ACT-01, ACT-02, ACT-03
+ ├── diapos : S1:1
+ ├── exercices : EX-01
+ ├── évaluations : S1-QCM-1, S1-QCM-2
+
+OBJECTIVE COVERAGE
+
+OBJ1 ✓ 100%
+OBJ2 ⚠ 75%
+OBJ3 ✗ 0%
+```
+
+Un objectif à 0 % est bloquant : rien ne permet de vérifier sa maîtrise. Une phase compte comme exercice si son titre contient par exemple « Activité », « Exercice » ou « Atelier ». La couverture montre qu'un lien existe, pas que l'objectif est bien enseigné : c'est à la critique et à vous d'en juger.
+
+### Provenance des informations
+
+La critique distingue ce qui est présent dans le cours (`source`), déduit raisonnablement (`deduite`), venu d'ailleurs (`externe`) et invérifiable (`incertaine`). Une information `externe` ou `incertaine` sans `[À VÉRIFIER]` est signalée comme `hallucination`. En complément, les scripts signalent les nombres et les noms propres absents du cours. Ce sont des pistes à vérifier, pas des preuves, et ils ne repèrent pas tout.
+
+### Types d'évaluation
+
+Les QCM de 5 questions par séance restent inchangés. Dans l'évaluation finale, une ligne `Type :` sous une question choisit parmi `qcm`, `vrai-faux`, `question-ouverte`, `exercice`, `etude-de-cas`, `probleme` et `reflexion`. Le dictionnaire `TYPES` de [`scripts/evaluations.py`](scripts/evaluations.py) associe à chaque type ses règles : ajouter un type revient à y ajouter une entrée.
+
+### Évaluer le système
+
+[`experiences/protocole.md`](experiences/protocole.md) décrit comment comparer un agent unique et le système multi-agent. **Cette comparaison n'a pas encore été menée** : rien ne prouve à ce stade que la critique améliore les cours.
 
 ## Niveaux et matières
 
@@ -64,7 +187,7 @@ Ces repères ne remplacent ni votre cours ni le programme officiel, que le plugi
 
 ## Contrôle et exemples
 
-Le contrôle de cohérence vérifie notamment que le temps de chaque séance correspond à votre découpage, que chaque objectif est traité et que chaque QCM a bien 5 questions avec une réponse valide. Toute information qui ne vient pas de votre cours est signalée par `[À VÉRIFIER]`.
+Le contrôle de cohérence vérifie notamment que le temps de chaque séance correspond à votre découpage, que chaque objectif est traité et que chaque QCM a bien 5 questions avec une seule réponse valide. Toute information qui ne vient pas de votre cours est signalée par `[À VÉRIFIER]`.
 
 Si le cours ne tient pas dans les heures prévues, le plugin vous propose quoi condenser ou passer en travail personnel. Il ne supprime rien sans votre accord.
 

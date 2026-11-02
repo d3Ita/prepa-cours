@@ -8,6 +8,7 @@ import re
 import sys
 from pathlib import Path
 
+from evaluations import CHOIX_MINIMUM, OBJECTIF, lire_corrige, lire_sujet, verifier
 from generer import lire_diapos
 
 FICHIERS_SEANCE = ("scenario.md", "diapos.md", "qcm.md", "qcm-corrige.md")
@@ -18,11 +19,21 @@ LIVRABLES_EVALUATION = ("Evaluations/evaluation.docx", "Corrections/evaluation-c
 CATEGORIES = ("Cours", "Diapos", "QCM", "Evaluations", "Corrections")
 MAX_PUCES = 6
 QUESTIONS_QCM = 5
-CHOIX_MINIMUM = 3
 SEANCE = re.compile(r"^[-*\s]*S[ée]ance\s+(\d+)\s*:\s*(.+?)\s*[—–]\s*(.*)$", re.MULTILINE | re.IGNORECASE)
-# « OBJ » et non « O » : en sciences, O2 et O3 désignent aussi des molécules.
-OBJECTIF = re.compile(r"\bOBJ\d+\b")
 CHAMPS_OBLIGATOIRES = {"niveau de la classe": r"Niveau", "matière": r"Mati[èe]re"}
+
+
+class Probleme(str):
+    """Un message affiché tel quel, qui garde ce que le score qualité doit savoir de lui."""
+
+    def __new__(cls, texte, categorie="coherence", severite="warning", etape="livrables"):
+        probleme = super().__new__(cls, texte)
+        probleme.categorie, probleme.severite, probleme.etape = categorie, severite, etape
+        return probleme
+
+
+def etiqueter(messages, **details):
+    return [Probleme(m, **details) for m in messages]
 
 
 def minutes(texte):
@@ -54,53 +65,50 @@ def controler_minutage(scenario, duree, seance):
 
 
 def controler_qcm(qcm, corrige, seance):
-    blocs = re.split(r"^##\s*Question\s+\d+.*$", qcm, flags=re.MULTILINE | re.IGNORECASE)[1:]
+    questions = lire_sujet(qcm, "qcm")
     problemes = []
-    if len(blocs) != QUESTIONS_QCM:
-        problemes.append(f"{seance} : le QCM a {len(blocs)} question(s) au lieu de {QUESTIONS_QCM}.")
+    if len(questions) != QUESTIONS_QCM:
+        problemes.append(f"{seance} : le QCM a {len(questions)} question(s) au lieu de {QUESTIONS_QCM}.")
     if OBJECTIF.search(qcm):
         problemes.append(f"{seance} : le sujet du QCM ne doit pas citer les objectifs.")
-    choix = [re.findall(r"^([A-Z])[.)]\s+\S", bloc, re.MULTILINE) for bloc in blocs]
-    for i, lettres in enumerate(choix, 1):
-        if len(lettres) < CHOIX_MINIMUM:
-            problemes.append(f"{seance} : la question {i} du QCM a moins de {CHOIX_MINIMUM} choix.")
-    reponses = dict(re.findall(r"^[-*\s]*Question\s+(\d+)\s*:\s*\**([A-Z])\b", corrige,
-                               re.MULTILINE | re.IGNORECASE))
-    for i, lettres in enumerate(choix, 1):
-        reponse = reponses.get(str(i))
-        if reponse is None:
-            problemes.append(f"{seance} : le corrigé ne donne pas la réponse à la question {i}.")
-        elif reponse not in lettres:
-            problemes.append(f"{seance} : la réponse {reponse} de la question {i} n'existe pas dans le QCM.")
-    if len(reponses) == QUESTIONS_QCM and len(set(reponses.values())) == 1:
-        problemes.append(f"{seance} : toutes les bonnes réponses du QCM sont la {next(iter(reponses.values()))}.")
+    for question in questions:
+        if question.type == "qcm" and len(question.choix) < CHOIX_MINIMUM:
+            problemes.append(f"{seance} : la question {question.numero} du QCM a moins de {CHOIX_MINIMUM} choix.")
+    problemes += [f"{seance} : {p}" for p in verifier(qcm, corrige, "qcm")]
+    lettres = [r.lettres[0] for r in lire_corrige(corrige) if r.lettres]
+    if len(lettres) == QUESTIONS_QCM and len(set(lettres)) == 1:
+        problemes.append(f"{seance} : toutes les bonnes réponses du QCM sont la {lettres[0]}.")
     return problemes
 
 
 def controler_seance(dossier, numero, duree, attendus, definis):
     nom = f"seance-{numero}"
     if not (dossier / nom).is_dir():
-        return [f"Le dossier {nom} est absent."]
+        return [Probleme(f"Le dossier {nom} est absent.", severite="critical", etape="scenarios")]
     problemes = []
     textes = {f: lire(dossier / nom / f) for f in FICHIERS_SEANCE}
+    etape = {"scenario.md": "scenarios"}
     for fichier, texte in textes.items():
         if texte is None:
-            problemes.append(f"{nom} : {fichier} est absent.")
+            problemes.append(Probleme(f"{nom} : {fichier} est absent.", severite="critical",
+                                      etape=etape.get(fichier, "livrables")))
     for fichier in FICHIERS_OBJECTIFS:
         if textes[fichier] is None:
             continue
         cites = set(OBJECTIF.findall(textes[fichier]))
-        problemes += [f"{nom} : {o} n'est pas couvert dans {fichier}." for o in sorted(attendus - cites)]
-        problemes += [f"{nom} : {fichier} cite {o}, absent de objectifs.md." for o in sorted(cites - definis)]
+        problemes += etiqueter([f"{nom} : {o} n'est pas couvert dans {fichier}." for o in sorted(attendus - cites)]
+                               + [f"{nom} : {fichier} cite {o}, absent de objectifs.md." for o in sorted(cites - definis)],
+                               etape=etape.get(fichier, "livrables"))
     if textes["scenario.md"] is not None:
-        problemes += controler_minutage(textes["scenario.md"], duree, nom)
+        problemes += etiqueter(controler_minutage(textes["scenario.md"], duree, nom), categorie="timing", etape="scenarios")
     if textes["qcm.md"] is not None and textes["qcm-corrige.md"] is not None:
-        problemes += controler_qcm(textes["qcm.md"], textes["qcm-corrige.md"], nom)
+        problemes += etiqueter(controler_qcm(textes["qcm.md"], textes["qcm-corrige.md"], nom),
+                               categorie="evaluation", severite="critical")
     if textes["diapos.md"] is not None:
         for contenu in lire_diapos(textes["diapos.md"]):
             if len(contenu["puces"]) > MAX_PUCES:
-                problemes.append(f"{nom} : diapo « {contenu['titre']} » avec {len(contenu['puces'])} puces "
-                                 f"(maximum {MAX_PUCES}).")
+                problemes.append(Probleme(f"{nom} : diapo « {contenu['titre']} » avec {len(contenu['puces'])} puces "
+                                          f"(maximum {MAX_PUCES}).", categorie="pedagogical"))
     return problemes
 
 
@@ -126,20 +134,23 @@ def controler_evaluation(dossier, definis):
         infos.append(f"Évaluation finale : {total:g} points.")
     if points and annonce and float(annonce.group(1).replace(",", ".")) != total:
         problemes.append(f"Les questions totalisent {total:g} points, mais le sujet annonce {annonce.group(1)}.")
-    return problemes, infos
+    return etiqueter(problemes, categorie="evaluation"), infos
 
 
 def controler_livrables(chapitre, numeros, avec_evaluation):
     attendus = [m.format(n=n) for n in numeros for m in LIVRABLES_SEANCE]
     if avec_evaluation:
         attendus += LIVRABLES_EVALUATION
-    problemes = [f"Le fichier {f} est absent." for f in attendus if not (chapitre / f).is_file()]
+    problemes = [Probleme(f"Le fichier {f} est absent.", severite="critical",
+                          etape="scenarios" if "scenario" in f else "livrables")
+                 for f in attendus if not (chapitre / f).is_file()]
     # Après un nouveau découpage, un ancien fichier pourrait être distribué par erreur.
     for categorie in CATEGORIES:
         for chemin in sorted((chapitre / categorie).glob("seance-*")):
             m = re.match(r"seance-(\d+)-", chemin.name)
             if m and int(m.group(1)) not in numeros:
-                problemes.append(f"Le fichier {categorie}/{chemin.name} ne correspond à aucune séance du découpage.")
+                problemes.append(Probleme(
+                    f"Le fichier {categorie}/{chemin.name} ne correspond à aucune séance du découpage."))
     return problemes
 
 
@@ -148,21 +159,25 @@ def controler(chapitre):
     dossier = chapitre / ".travail"
     objectifs_md = lire(dossier / "objectifs.md")
     if objectifs_md is None:
-        return [".travail/objectifs.md est absent : lancez le contrôle depuis le dossier du chapitre."], []
+        return [Probleme(".travail/objectifs.md est absent : lancez le contrôle depuis le dossier du chapitre.",
+                         severite="critical", etape="decoupage")], []
     problemes, infos = [], []
     for nom, motif in CHAMPS_OBLIGATOIRES.items():
         if not re.search(rf"^[-*\s]*{motif}\s*:\s*\S", objectifs_md, re.MULTILINE | re.IGNORECASE):
-            problemes.append(f"objectifs.md n'indique pas : {nom}.")
+            problemes.append(Probleme(f"objectifs.md n'indique pas : {nom}.", etape="decoupage"))
     definis = set(re.findall(r"^[-*\s]*(OBJ\d+)\s*:", objectifs_md, re.MULTILINE))
     if not definis:
-        problemes.append("objectifs.md ne définit aucun objectif (« - OBJ1 : … »).")
+        problemes.append(Probleme("objectifs.md ne définit aucun objectif (« - OBJ1 : … »).",
+                                  severite="critical", etape="decoupage"))
 
     seances = SEANCE.findall(objectifs_md)
     if not seances:
-        problemes.append("objectifs.md ne contient aucune séance (« Séance 1 : 2 h — OBJ1, OBJ2 »).")
+        problemes.append(Probleme("objectifs.md ne contient aucune séance (« Séance 1 : 2 h — OBJ1, OBJ2 »).",
+                                  severite="critical", etape="decoupage"))
     numeros = [int(s[0]) for s in seances]
     if numeros != list(range(1, len(numeros) + 1)):
-        problemes.append(f"Les séances doivent être numérotées à partir de 1 et sans trou : {numeros}.")
+        problemes.append(Probleme(f"Les séances doivent être numérotées à partir de 1 et sans trou : {numeros}.",
+                                  etape="decoupage"))
 
     total, couverts = 0, set()
     for numero, duree_texte, objectifs_texte in seances:
@@ -170,23 +185,26 @@ def controler(chapitre):
         attendus = set(OBJECTIF.findall(objectifs_texte))
         couverts |= attendus
         if duree is None or duree == 0:
-            problemes.append(f"Séance {numero} : durée illisible « {duree_texte} » (ex. : 2 h, 1 h 30, 55 min).")
+            problemes.append(Probleme(f"Séance {numero} : durée illisible « {duree_texte} » (ex. : 2 h, 1 h 30, 55 min).",
+                                      categorie="timing", severite="critical", etape="decoupage"))
             continue
         total += duree
         if not attendus:
-            problemes.append(f"Séance {numero} : aucun objectif attribué.")
-        problemes += [f"Séance {numero} : {o} n'est pas défini dans objectifs.md." for o in sorted(attendus - definis)]
+            problemes.append(Probleme(f"Séance {numero} : aucun objectif attribué.", etape="decoupage"))
+        problemes += etiqueter([f"Séance {numero} : {o} n'est pas défini dans objectifs.md."
+                                for o in sorted(attendus - definis)], etape="decoupage")
         problemes += controler_seance(dossier, numero, duree, attendus, definis)
-    problemes += [f"{o} n'est attribué à aucune séance." for o in sorted(definis - couverts)]
+    problemes += etiqueter([f"{o} n'est attribué à aucune séance." for o in sorted(definis - couverts)], etape="decoupage")
 
     annonce = re.search(r"^[-*\s]*Durée totale\s*:\s*(.+)$", objectifs_md, re.MULTILINE | re.IGNORECASE)
     if annonce and minutes(annonce.group(1)) != total:
-        problemes.append(f"Les séances totalisent {total} min, mais objectifs.md annonce « {annonce.group(1).strip()} ».")
+        problemes.append(Probleme(f"Les séances totalisent {total} min, mais objectifs.md annonce « {annonce.group(1).strip()} ».",
+                                  categorie="timing", etape="decoupage"))
 
     # Après un nouveau découpage, un ancien dossier pourrait être distribué par erreur.
     for extra in sorted(p.name for p in dossier.glob("seance-*") if p.is_dir()):
         if extra not in {f"seance-{n}" for n in numeros}:
-            problemes.append(f"Le dossier {extra} ne correspond à aucune séance du découpage.")
+            problemes.append(Probleme(f"Le dossier {extra} ne correspond à aucune séance du découpage.", etape="scenarios"))
 
     autres_problemes, autres_infos = controler_evaluation(dossier, definis)
     problemes += autres_problemes

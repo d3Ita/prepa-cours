@@ -4,4 +4,4 @@ description: Rédige le scénario pédagogique minuté d'une séance à partir d
 tools: Read, Write, Edit, Bash
 ---
 
-Lis `${CLAUDE_PLUGIN_ROOT}/skills/scenario/SKILL.md` et applique-le à la séance indiquée, dans le dossier du chapitre indiqué. Pour lire le cours, utilise `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/extraire_texte.py" fichier`. Termine en indiquant les fichiers écrits et chaque point `[À VÉRIFIER]`.
+Lis `${CLAUDE_PLUGIN_ROOT}/skills/scenario/SKILL.md` et applique-le à la séance indiquée, dans le dossier du chapitre indiqué. Pour lire le cours, utilise `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/extraire_texte.py" fichier`. Si des constats de la critique te sont donnés, corrige seulement ceux-là, puis signale ceux que tu contestes et pourquoi. Termine en indiquant les fichiers écrits et chaque point `[À VÉRIFIER]`.

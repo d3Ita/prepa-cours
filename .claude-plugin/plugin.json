@@ -1,13 +1,21 @@
 {
   "name": "prepa-cours",
   "displayName": "Prépa Cours",
-  "version": "0.5.1",
-  "description": "Organise les cours par niveau, classe et chapitre, et adapte un cours Word, LibreOffice ou texte à la matière, aux heures et aux séances prévues : scénario minuté, diapos et QCM de 5 questions par séance, avec contrôle de cohérence et historique des versions.",
+  "version": "0.6.0",
+  "description": "Organise les cours par niveau, classe et chapitre, et adapte un cours Word, LibreOffice ou texte à la matière, aux heures et aux séances prévues : scénario minuté, diapos et QCM de 5 questions par séance, avec critique automatique, score qualité, validation humaine et historique des versions.",
   "userConfig": {
     "dossier_cours": {
       "type": "directory",
       "title": "Dossier de cours",
       "description": "Dossier qui contient tous vos cours, classés par niveau, classe et chapitre."
+    },
+    "max_revision_cycles": {
+      "type": "number",
+      "title": "Nombre maximal de révisions automatiques",
+      "description": "Après ce nombre de corrections par étape, le plugin vous demande de décider.",
+      "default": 2,
+      "min": 0,
+      "max": 5
     }
   },
   "author": {

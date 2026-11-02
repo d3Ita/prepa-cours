@@ -16,6 +16,8 @@ Durée : 30 min. Total : 20 points.
 [réponse: 4]
 ```
 
+Le type de question par défaut est `question-ouverte`. Pour varier, ajoute une ligne `Type : …` sous le titre de la question : `qcm` (choix `A.`, `B.`…), `vrai-faux`, `question-ouverte`, `exercice`, `etude-de-cas`, `probleme` ou `reflexion`. Dans le corrigé, écris `Question 1 : réponse attendue (OBJ1)` ou une ligne de tableau `| 1 | OBJ1 | réponse attendue | points |`.
+
 Génère ensuite les fichiers à imprimer, le sujet dans `Evaluations` et le corrigé dans `Corrections` :
 
 `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/generer.py" docx .travail/evaluation.md Evaluations/evaluation.docx --outils "${CLAUDE_PLUGIN_DATA}"`

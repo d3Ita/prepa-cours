@@ -28,6 +28,7 @@ Génère ensuite la version à lire, en ajoutant `--ecraser` seulement si tu as 
 
 ## Règles
 
+- Commence le titre d'une phase de pratique par « Activité », « Exercice » ou « Atelier » : la matrice pédagogique les suit ainsi jusqu'à l'évaluation. Chaque objectif a au moins une phase de pratique.
 - La durée vient de `.travail/objectifs.md` : les phases s'enchaînent sans trou et s'arrêtent exactement à la fin de la séance.
 - Traite tous les objectifs attribués à la séance, et seulement le contenu prévu pour elle.
 - À partir de la séance 2, commence par un rappel de la séance précédente.

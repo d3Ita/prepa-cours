@@ -21,6 +21,7 @@ Matière : SVT
 Durée totale : 5 h
 
 - OBJ1 : Citer …
+  - Notions : photosynthèse, chlorophylle
 - OBJ2 : Expliquer …
 - OBJ3 : Interpréter …
 
@@ -31,7 +32,7 @@ Séance 2 : 1 h 30 — OBJ2
 Séance 3 : 1 h 30 — OBJ3
 ```
 
-Respecte ce format : le contrôle de cohérence le lit. Écris les durées sous la forme `2 h`, `1 h 30` ou `55 min`.
+Respecte ce format : le contrôle de cohérence le lit. La ligne `Notions`, facultative mais conseillée, alimente la matrice pédagogique. Écris les durées sous la forme `2 h`, `1 h 30` ou `55 min`.
 
 ## Répartir le contenu
 
