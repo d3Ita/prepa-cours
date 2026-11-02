@@ -1,7 +1,7 @@
 ---
 name: cours
-description: Supervise la préparation complète d'un cours à partir d'un fichier texte, Word ou LibreOffice (découpage en séances, scénarios, diapos, QCM, versions). À utiliser quand un prof veut préparer ou reprendre un cours.
-argument-hint: "[fichier du cours] [heures et séances]"
+description: Supervise la préparation complète d'un cours à partir d'un fichier texte, Word ou LibreOffice, selon le niveau de la classe et la matière (découpage en séances, scénarios, diapos, QCM, versions). À utiliser quand un prof veut préparer ou reprendre un cours.
+argument-hint: "[fichier du cours] [niveau] [matière] [heures et séances]"
 ---
 
 # Superviser la préparation d'un cours
@@ -20,7 +20,7 @@ Si Python ou Git manque, explique simplement au prof quoi installer et arrête-t
 
 1. **Sauvegarder l'existant** avec le message « État initial ».
 2. **Lire le cours.** Si le dossier contient plusieurs documents, demande lequel utiliser.
-3. **Découper** avec le skill `decoupage` : le prof indique les heures et les séances, tu écris `objectifs.md`. **Arrête-toi tant qu'il n'a pas validé le découpage.**
+3. **Découper** avec le skill `decoupage` : le prof indique le niveau de la classe, la matière, les heures et les séances, et tu écris `objectifs.md`. **Arrête-toi tant qu'il n'a pas validé le découpage.**
 4. **Lancer l'agent `scenariste` pour chaque séance**, en indiquant son numéro, puis résume les résultats et indique les fichiers `seance-N/scenario.docx` à ouvrir. **Arrête-toi tant que le prof n'a pas validé les scénarios.**
 5. **Pour chaque séance, lancer l'agent `concepteur-diapos`, puis l'agent `evaluateur` pour le QCM de 5 questions.**
 6. **Proposer une évaluation finale.** Lance `evaluateur` pour la créer seulement si le prof en veut une.
@@ -33,5 +33,6 @@ Si Python ou Git manque, explique simplement au prof quoi installer et arrête-t
 - Le cours du prof fait foi. Toute information ajoutée est signalée par `[À VÉRIFIER]`.
 - Avant toute modification d'un fichier existant, sauvegarde.
 - Si les heures changent, utilise le skill `decoupage`.
+- Pour adapter un cours à un autre niveau, suis `${CLAUDE_PLUGIN_ROOT}/references/niveaux.md` et crée un nouveau dossier.
 - Si le prof veut revenir en arrière ou comparer des versions, utilise le skill `versions`.
 - Refuse de traiter des noms, des notes ou des copies d'élèves : ces données n'ont pas besoin de passer par ce plugin.

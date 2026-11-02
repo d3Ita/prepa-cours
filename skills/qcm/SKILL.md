@@ -6,7 +6,7 @@ argument-hint: "[numéro de séance]"
 
 # Créer le QCM d'une séance
 
-Chaque séance a exactement **5 questions**. Lis `objectifs.md` et `seance-N/scenario.md`, puis écris `seance-N/qcm.md` et `seance-N/qcm-corrige.md`.
+Chaque séance a exactement **5 questions**. Lis `objectifs.md`, `seance-N/scenario.md`, `${CLAUDE_PLUGIN_ROOT}/references/niveaux.md` et le fichier de la matière dans `${CLAUDE_PLUGIN_ROOT}/references/matieres/` (`autres.md` s'il n'y en a pas), et applique-les. Écris ensuite `seance-N/qcm.md` et `seance-N/qcm-corrige.md`.
 
 `qcm.md` :
 
@@ -27,7 +27,7 @@ D. Par la tige
 ```markdown
 # Corrigé du QCM : séance 1
 
-Question 1 : B (O1) — L'eau entre par les racines.
+Question 1 : B (OBJ1) — L'eau entre par les racines.
 ```
 
 Génère ensuite les fichiers à imprimer, depuis le dossier du cours :

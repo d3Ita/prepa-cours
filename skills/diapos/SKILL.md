@@ -6,14 +6,14 @@ argument-hint: "[numéro de séance]"
 
 # Créer les diapos d'une séance
 
-Écris `seance-N/diapos.md` à partir de `seance-N/scenario.md`, puis génère `seance-N/diapos.pptx` (LibreOffice Impress l'ouvre aussi).
+Lis `objectifs.md`, `${CLAUDE_PLUGIN_ROOT}/references/niveaux.md` et le fichier de la matière dans `${CLAUDE_PLUGIN_ROOT}/references/matieres/` (`autres.md` s'il n'y en a pas), et applique-les. Écris ensuite `seance-N/diapos.md` à partir de `seance-N/scenario.md`, puis génère `seance-N/diapos.pptx` (LibreOffice Impress l'ouvre aussi).
 
 ```markdown
 # Titre de la diapo
 - Point clé avec un mot **important**
   - Détail
 ![Schéma de la feuille](images/feuille.png)
-> Objectif : O1
+> Objectif : OBJ1
 > Note pour le prof, visible seulement en mode présentateur
 ```
 
@@ -28,7 +28,7 @@ Ajoute `--modele fichier.pptx` si le prof a un modèle d'établissement.
 - Une idée par diapo, six puces au maximum, une image au maximum.
 - Le nombre de diapos reste réaliste pour la durée de la séance.
 - Le discours va dans les notes, pas sur la diapo.
-- Chaque objectif de la séance est cité dans une note `> Objectif : O1` sur au moins une diapo.
+- Chaque objectif de la séance est cité dans une note `> Objectif : OBJ1` sur au moins une diapo.
 - N'utilise que des images fournies par le prof. S'il en manque une, décris-la dans les notes : « Image à ajouter : … ».
 - Toute information absente du cours source porte la mention `[À VÉRIFIER]`.
 

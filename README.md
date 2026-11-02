@@ -3,11 +3,11 @@
 [![Tests](https://github.com/d3Ita/prof-cours/actions/workflows/tests.yml/badge.svg)](https://github.com/d3Ita/prof-cours/actions/workflows/tests.yml)
 [![Licence : MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
 
-**Donnez votre cours en Word, LibreOffice ou texte, indiquez vos heures et vos séances : récupérez pour chaque séance un scénario minuté, des diapos et un QCM de 5 questions, dans des fichiers que vous pouvez retoucher avec PowerPoint, Word ou LibreOffice.**
+**Donnez votre cours en Word, LibreOffice ou texte, indiquez le niveau de la classe, la matière, vos heures et vos séances : récupérez pour chaque séance un scénario minuté, des diapos et un QCM de 5 questions, dans des fichiers que vous pouvez retoucher avec PowerPoint, Word ou LibreOffice.**
 
-*Claude Code plugin that fits a teacher's course to a given number of hours and sessions, then produces a lesson plan, slides and a 5-question quiz for each session, with version history. The plugin speaks French.*
+*Claude Code plugin that fits a teacher's course to a class level, a subject and a given number of hours and sessions, then produces a lesson plan, slides and a 5-question quiz for each session, with version history. The plugin speaks French.*
 
-> **Version 0.3 : préversion.** Les scripts sont testés automatiquement, mais le parcours complet avec les agents n'a pas encore été éprouvé sur de vrais cours. Relisez toujours ce qui est produit, surtout les corrigés, avant de l'utiliser en classe.
+> **Version 0.4 : préversion.** Les scripts sont testés automatiquement, mais le parcours complet avec les agents n'a pas encore été éprouvé sur de vrais cours. Relisez toujours ce qui est produit, surtout les corrigés, avant de l'utiliser en classe.
 
 ## Comment ça marche
 
@@ -32,6 +32,17 @@ flowchart LR
 | **Concepteur de diapos** | Crée les diapos et les notes du présentateur, avec le modèle de votre établissement si vous en avez un |
 | **Évaluateur** | Crée le QCM de 5 questions de chaque séance et son corrigé, et une évaluation finale si vous en voulez une |
 | **Versions** (`/prof-cours:versions`) | Sauvegarde, compare et restaure vos fichiers |
+
+## Niveaux et matières
+
+Tous les agents s'adaptent à votre classe avant d'écrire.
+
+- **Niveaux :** de la 6e au post-bac, avec notamment la Seconde, la Première et la Terminale. Le niveau règle le vocabulaire, le rythme des activités et la difficulté des QCM.
+- **Matières :** SVT, mathématiques, physique-chimie, français, histoire-géographie, SES, philosophie, langues vivantes et informatique/NSI, avec un profil général pour les autres matières. Chaque profil règle la démarche, les activités, les diapos, les QCM et les erreurs à éviter.
+
+Ces repères ne remplacent ni votre cours ni le programme officiel, que le plugin ne cite pas. Une notion qui semble hors du niveau vous est signalée sans être retirée. Pour ajouter une matière, il suffit d'ajouter un fichier dans [`references/matieres`](references/matieres).
+
+## Contrôle et exemples
 
 Le contrôle de cohérence vérifie notamment que le temps de chaque séance correspond à votre découpage, que chaque objectif est traité et que chaque QCM a bien 5 questions avec une réponse valide. Toute information qui ne vient pas de votre cours est signalée par `[À VÉRIFIER]`.
 
@@ -58,7 +69,7 @@ Internet est nécessaire à la première génération de fichiers, pour installe
 Ouvrez Claude Code dans le dossier de votre cours, avec votre document dedans (`.docx`, `.odt` ou `.txt`), puis indiquez vos heures :
 
 ```text
-/prof-cours:cours mon-cours.docx 12 h en 6 séances de 2 h
+/prof-cours:cours mon-cours.docx Terminale SVT, 12 h en 6 séances de 2 h
 ```
 
 Les séances peuvent aussi avoir des durées différentes : « 3 séances de 2 h, puis 2 séances d'1 h 30 ». Vous obtenez dans ce dossier :
@@ -91,6 +102,7 @@ Vos retouches sont protégées : le plugin n'écrase jamais un fichier existant 
 
 - Les anciens fichiers Word `.doc` ne sont pas lus : enregistrez-les d'abord en `.docx`.
 - Le plugin ne lit que le texte de votre cours, pas ses images.
+- Les formules complexes ne sont pas mises en forme : elles sont signalées `[FORMULE À SAISIR]` pour que vous les saisissiez dans l'éditeur d'équations.
 - La durée de chaque notion est une estimation : ajustez-la selon votre classe.
 - Les sauvegardes ne protègent pas d'une panne de disque : copiez aussi le dossier du cours ailleurs.
 - La comparaison de versions porte sur le texte, pas sur les images ni la mise en forme.

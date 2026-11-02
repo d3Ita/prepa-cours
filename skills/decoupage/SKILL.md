@@ -1,6 +1,6 @@
 ---
 name: decoupage
-description: Découpe un cours en séances selon le volume d'heures et le nombre de séances donnés par l'enseignant, ou réajuste un découpage existant. À utiliser dès qu'un prof parle d'heures, de séances, de planning ou d'adapter la durée d'un cours.
+description: Découpe un cours en séances selon le niveau de la classe, la matière, le volume d'heures et le nombre de séances donnés par l'enseignant, ou réajuste un découpage existant. À utiliser dès qu'un prof parle d'heures, de séances, de planning ou d'adapter la durée d'un cours.
 argument-hint: "[volume horaire et séances, ex. 12 h en 6 séances de 2 h]"
 ---
 
@@ -10,23 +10,24 @@ Le découpage horaire vient du prof : tu l'appliques exactement et tu adaptes le
 
 ## Écrire `objectifs.md`
 
-Lis tout le cours source. Si le prof n'a pas donné le niveau, le volume horaire et la durée de chaque séance, demande-les. Écris ensuite :
+Lis tout le cours source. Si le prof n'a pas donné le niveau, la matière, le volume horaire et la durée de chaque séance, demande-les. Déduis le niveau ou la matière du cours seulement pour les lui proposer. Lis ensuite `${CLAUDE_PLUGIN_ROOT}/references/niveaux.md` et le fichier de sa matière dans `${CLAUDE_PLUGIN_ROOT}/references/matieres/` (`autres.md` s'il n'y en a pas). Écris alors :
 
 ```markdown
 # Objectifs : titre du cours
 
-Niveau : 5e
+Niveau : Première, voie générale
+Matière : SVT
 Durée totale : 5 h
 
-- O1 : Citer …
-- O2 : Expliquer …
-- O3 : Interpréter …
+- OBJ1 : Citer …
+- OBJ2 : Expliquer …
+- OBJ3 : Interpréter …
 
 ## Découpage
 
-Séance 1 : 2 h — O1
-Séance 2 : 1 h 30 — O2
-Séance 3 : 1 h 30 — O3
+Séance 1 : 2 h — OBJ1
+Séance 2 : 1 h 30 — OBJ2
+Séance 3 : 1 h 30 — OBJ3
 ```
 
 Respecte ce format : le contrôle de cohérence le lit. Écris les durées sous la forme `2 h`, `1 h 30` ou `55 min`.
@@ -35,7 +36,7 @@ Respecte ce format : le contrôle de cohérence le lit. Écris les durées sous 
 
 - Suis l'ordre du cours, sauf si un prérequis oblige à le changer.
 - Dans chaque séance, réserve d'abord le temps de l'accueil, du rappel de la séance précédente et du QCM en classe (10 min). Le reste va au contenu et aux activités.
-- Compte large : une notion nouvelle demande du temps d'explication et du temps d'activité.
+- Compte large : une notion nouvelle demande du temps d'explication et du temps d'activité, d'autant plus que la classe est jeune.
 - Ne coupe jamais une notion au milieu d'une séance sans le signaler.
 
 ## Présenter au prof avant de continuer

@@ -1,8 +1,8 @@
 {
   "name": "prof-cours",
   "displayName": "Prof Cours",
-  "version": "0.3.0",
-  "description": "Adapte un cours Word, LibreOffice ou texte aux heures et aux séances prévues : scénario minuté, diapos et QCM de 5 questions par séance, avec contrôle de cohérence et historique des versions.",
+  "version": "0.4.0",
+  "description": "Adapte un cours Word, LibreOffice ou texte au niveau de la classe, à la matière, aux heures et aux séances prévues : scénario minuté, diapos et QCM de 5 questions par séance, avec contrôle de cohérence et historique des versions.",
   "author": {
     "name": "KIKZILL",
     "url": "https://github.com/d3Ita"

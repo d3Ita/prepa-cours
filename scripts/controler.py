@@ -16,7 +16,9 @@ MAX_PUCES = 6
 QUESTIONS_QCM = 5
 CHOIX_MINIMUM = 3
 SEANCE = re.compile(r"^[-*\s]*S[ée]ance\s+(\d+)\s*:\s*(.+?)\s*[—–]\s*(.*)$", re.MULTILINE | re.IGNORECASE)
-OBJECTIF = re.compile(r"\bO\d+\b")
+# « OBJ » et non « O » : en sciences, O2 et O3 désignent aussi des molécules.
+OBJECTIF = re.compile(r"\bOBJ\d+\b")
+CHAMPS_OBLIGATOIRES = {"niveau de la classe": r"Niveau", "matière": r"Mati[èe]re"}
 
 
 def minutes(texte):
@@ -129,13 +131,16 @@ def controler(dossier):
     if objectifs_md is None:
         return ["objectifs.md est absent."], []
     problemes, infos = [], []
-    definis = set(re.findall(r"^[-*\s]*(O\d+)\s*:", objectifs_md, re.MULTILINE))
+    for nom, motif in CHAMPS_OBLIGATOIRES.items():
+        if not re.search(rf"^[-*\s]*{motif}\s*:\s*\S", objectifs_md, re.MULTILINE | re.IGNORECASE):
+            problemes.append(f"objectifs.md n'indique pas : {nom}.")
+    definis = set(re.findall(r"^[-*\s]*(OBJ\d+)\s*:", objectifs_md, re.MULTILINE))
     if not definis:
-        problemes.append("objectifs.md ne définit aucun objectif (« - O1 : … »).")
+        problemes.append("objectifs.md ne définit aucun objectif (« - OBJ1 : … »).")
 
     seances = SEANCE.findall(objectifs_md)
     if not seances:
-        problemes.append("objectifs.md ne contient aucune séance (« Séance 1 : 2 h — O1, O2 »).")
+        problemes.append("objectifs.md ne contient aucune séance (« Séance 1 : 2 h — OBJ1, OBJ2 »).")
     numeros = [int(s[0]) for s in seances]
     if numeros != list(range(1, len(numeros) + 1)):
         problemes.append(f"Les séances doivent être numérotées à partir de 1 et sans trou : {numeros}.")

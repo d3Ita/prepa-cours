@@ -134,17 +134,18 @@ class TestScripts(unittest.TestCase):
     def ecrire_cours(self, **remplacements):
         """Écrit un cours valide de deux séances ; une clé « s1_qcm » désigne seance-1/qcm.md."""
         qcm = "".join(f"## Question {i}\nÉnoncé\nA. un\nB. deux\nC. trois\nD. quatre\n" for i in range(1, 6))
-        reponses = "".join(f"Question {i} : {l} (O1, O2)\n" for i, l in enumerate("ABCDA", 1))
+        reponses = "".join(f"Question {i} : {l} (OBJ1, OBJ2)\n" for i, l in enumerate("ABCDA", 1))
         fichiers = {
-            "objectifs": ("objectifs.md", "Durée totale : 2 h 30\n- O1 : définir\n- O2 : identifier\n\n"
-                                          "Séance 1 : 1 h 30 — O1\nSéance 2 : 1 h — O2\n"),
+            "objectifs": ("objectifs.md", "Niveau : Première\nMatière : SVT\n"
+                                          "Durée totale : 2 h 30\n- OBJ1 : définir\n- OBJ2 : identifier\n\n"
+                                          "Séance 1 : 1 h 30 — OBJ1\nSéance 2 : 1 h — OBJ2\n"),
         }
-        for n, duree, objectif in ((1, 90, "O1"), (2, 60, "O2")):
+        for n, duree, objectif in ((1, 90, "OBJ1"), (2, 60, "OBJ2")):
             fichiers[f"s{n}_scenario"] = (f"seance-{n}/scenario.md", f"## 0-20 min — A\n- {objectif}\n## 20-{duree} min — B\n")
             fichiers[f"s{n}_diapos"] = (f"seance-{n}/diapos.md", f"# Un\n- x\n> Objectif : {objectif}\n")
             fichiers[f"s{n}_qcm"] = (f"seance-{n}/qcm.md", qcm)
             fichiers[f"s{n}_corrige"] = (f"seance-{n}/qcm-corrige.md",
-                                         reponses.replace("(O1, O2)", f"({objectif})"))
+                                         reponses.replace("(OBJ1, OBJ2)", f"({objectif})"))
         for cle, texte in remplacements.items():
             fichiers[cle] = (fichiers[cle][0], texte)
         for chemin, texte in fichiers.values():
@@ -160,24 +161,24 @@ class TestScripts(unittest.TestCase):
     def test_controle_detecte_les_problemes(self):
         qcm_4 = "".join(f"## Question {i}\nA. un\nB. deux\nC. trois\n" for i in range(1, 5))
         qcm_5 = qcm_4 + "## Question 5\nA. un\nB. deux\nC. trois\n"
-        reponses = "Question 1 : A (O1)\nQuestion 2 : B\nQuestion 3 : C\nQuestion 4 : A\nQuestion 5 : B\n"
+        reponses = "Question 1 : A (OBJ1)\nQuestion 2 : B\nQuestion 3 : C\nQuestion 4 : A\nQuestion 5 : B\n"
         cas = {
             "4 question(s) au lieu de 5": {"s1_qcm": qcm_4},
             "question 2 du QCM a moins": {"s1_qcm": qcm_5.replace("C. trois\n", "", 2)},
             "ne donne pas la réponse à la question 5": {"s1_corrige": reponses.replace("Question 5 : B\n", "")},
             "réponse E de la question 1": {"s1_corrige": reponses.replace("1 : A", "1 : E"), "s1_qcm": qcm_5},
-            "toutes les bonnes réponses": {"s1_corrige": "".join(f"Question {i} : A (O1)\n" for i in range(1, 6)),
+            "toutes les bonnes réponses": {"s1_corrige": "".join(f"Question {i} : A (OBJ1)\n" for i in range(1, 6)),
                                            "s1_qcm": qcm_5},
-            "ne doit pas citer les objectifs": {"s1_qcm": qcm_5 + "O1\n"},
-            "O1 n'est pas couvert dans diapos.md": {"s1_diapos": "# Un\n- x\n"},
-            "début attendu à 20": {"s1_scenario": "## 0-20 min\n- O1\n## 25-90 min\n"},
-            "dure 60 min pour une séance de 90": {"s1_scenario": "## 0-60 min\n- O1\n"},
-            "totalisent 150 min": {"objectifs": "Durée totale : 3 h\n- O1 : a\n- O2 : b\n\n"
-                                                "Séance 1 : 1 h 30 — O1\nSéance 2 : 1 h — O2\n"},
-            "O2 n'est attribué": {"objectifs": "- O1 : a\n- O2 : b\n\nSéance 1 : 1 h 30 — O1\nSéance 2 : 1 h — O1\n"},
-            "seance-2 ne correspond": {"objectifs": "- O1 : a\n\nSéance 1 : 1 h 30 — O1\n"},
-            "durée illisible": {"objectifs": "- O1 : a\n- O2 : b\n\nSéance 1 : bientôt — O1\nSéance 2 : 1 h — O2\n"},
-            "7 puces": {"s1_diapos": "# Un\n> O1\n" + "- x\n" * 7},
+            "ne doit pas citer les objectifs": {"s1_qcm": qcm_5 + "OBJ1\n"},
+            "OBJ1 n'est pas couvert dans diapos.md": {"s1_diapos": "# Un\n- x\n"},
+            "début attendu à 20": {"s1_scenario": "## 0-20 min\n- OBJ1\n## 25-90 min\n"},
+            "dure 60 min pour une séance de 90": {"s1_scenario": "## 0-60 min\n- OBJ1\n"},
+            "totalisent 150 min": {"objectifs": "Durée totale : 3 h\n- OBJ1 : a\n- OBJ2 : b\n\n"
+                                                "Séance 1 : 1 h 30 — OBJ1\nSéance 2 : 1 h — OBJ2\n"},
+            "OBJ2 n'est attribué": {"objectifs": "- OBJ1 : a\n- OBJ2 : b\n\nSéance 1 : 1 h 30 — OBJ1\nSéance 2 : 1 h — OBJ1\n"},
+            "seance-2 ne correspond": {"objectifs": "- OBJ1 : a\n\nSéance 1 : 1 h 30 — OBJ1\n"},
+            "durée illisible": {"objectifs": "- OBJ1 : a\n- OBJ2 : b\n\nSéance 1 : bientôt — OBJ1\nSéance 2 : 1 h — OBJ2\n"},
+            "7 puces": {"s1_diapos": "# Un\n> OBJ1\n" + "- x\n" * 7},
         }
         for attendu, remplacement in cas.items():
             with self.subTest(attendu):
@@ -185,6 +186,40 @@ class TestScripts(unittest.TestCase):
                 r = lancer("controler.py", dossier=self.d)
                 self.assertEqual(r.returncode, 1, r.stdout)
                 self.assertIn(attendu, r.stdout)
+
+    def test_controle_exige_niveau_et_matiere(self):
+        self.ecrire_cours(objectifs="- OBJ1 : a\n- OBJ2 : b\n\nSéance 1 : 1 h 30 — OBJ1\nSéance 2 : 1 h — OBJ2\n")
+        r = lancer("controler.py", dossier=self.d)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("n'indique pas : niveau de la classe", r.stdout)
+        self.assertIn("n'indique pas : matière", r.stdout)
+
+    def test_molecules_non_confondues_avec_objectifs(self):
+        molecules = "Le dioxygène O" + "2 et l'ozone O" + "3\n"
+        qcm = "".join(f"## Question {i}\n{molecules}A. un\nB. deux\nC. trois\nD. quatre\n" for i in range(1, 6))
+        self.ecrire_cours(s1_qcm=qcm)
+        r = lancer("controler.py", dossier=self.d)
+        self.assertEqual(r.returncode, 0, r.stdout)
+
+    def test_formules_en_texte_dans_les_fichiers(self):
+        formule = "CO₂ + H₂O, x² ≤ √2, 10⁻³, π"
+        (self.d / "d.md").write_text(f"# {formule}\n- {formule}\n", encoding="utf-8")
+        (self.d / "e.md").write_text(f"{formule}\n", encoding="utf-8")
+        self.assertEqual(lancer("generer.py", "pptx", "d.md", "d.pptx", dossier=self.d).returncode, 0)
+        self.assertEqual(lancer("generer.py", "docx", "e.md", "e.docx", dossier=self.d).returncode, 0)
+        self.assertIn(formule, lancer("extraire_texte.py", "d.pptx", dossier=self.d).stdout)
+        self.assertIn(formule, lancer("extraire_texte.py", "e.docx", dossier=self.d).stdout)
+
+    def test_profils_de_matiere_et_niveaux_complets(self):
+        racine = Path(__file__).resolve().parent.parent / "references"
+        profils = {p.stem: p.read_text(encoding="utf-8") for p in (racine / "matieres").glob("*.md")}
+        self.assertLessEqual({"svt", "maths", "physique-chimie", "francais", "histoire-geo", "autres"}, set(profils))
+        for nom, texte in profils.items():
+            for section in ("## Démarche", "## Scénario", "## Diapos", "## QCM", "## À surveiller"):
+                self.assertIn(section, texte, nom)
+        niveaux = (racine / "niveaux.md").read_text(encoding="utf-8")
+        for niveau in ("6e", "3e", "Seconde", "Première", "Terminale", "Post-bac"):
+            self.assertIn(niveau, niveaux)
 
     def test_controle_evaluation_finale_facultative(self):
         self.ecrire_cours()
