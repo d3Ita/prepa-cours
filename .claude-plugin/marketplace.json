@@ -1,6 +1,6 @@
 {
   "name": "prof-cours",
-  "description": "Outils pour préparer un cours avec Claude : scénario, diapos, évaluation et versions.",
+  "description": "Outils pour préparer un cours avec Claude : découpage en séances, scénarios, diapos, QCM et versions.",
   "owner": {
     "name": "KIKZILL",
     "url": "https://github.com/d3Ita"

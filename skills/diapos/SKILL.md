@@ -1,11 +1,12 @@
 ---
 name: diapos
-description: Crée ou met à jour les diapos d'un cours au format PowerPoint, lisible aussi dans LibreOffice Impress, à partir de scenario.md.
+description: Crée ou met à jour les diapos d'une séance au format PowerPoint, lisible aussi dans LibreOffice Impress, à partir de son scénario.
+argument-hint: "[numéro de séance]"
 ---
 
-# Créer les diapos
+# Créer les diapos d'une séance
 
-Écris `diapos.md` à partir de `scenario.md`, puis génère `diapos.pptx` (LibreOffice Impress l'ouvre aussi).
+Écris `seance-N/diapos.md` à partir de `seance-N/scenario.md`, puis génère `seance-N/diapos.pptx` (LibreOffice Impress l'ouvre aussi).
 
 ```markdown
 # Titre de la diapo
@@ -16,17 +17,18 @@ description: Crée ou met à jour les diapos d'un cours au format PowerPoint, li
 > Note pour le prof, visible seulement en mode présentateur
 ```
 
-Génération :
+Le chemin d'une image part du dossier de la séance. Génération depuis le dossier du cours :
 
-`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/generer.py" pptx diapos.md diapos.pptx --outils "${CLAUDE_PLUGIN_DATA}"`
+`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/generer.py" pptx seance-N/diapos.md seance-N/diapos.pptx --outils "${CLAUDE_PLUGIN_DATA}"`
 
 Ajoute `--modele fichier.pptx` si le prof a un modèle d'établissement.
 
 ## Règles
 
 - Une idée par diapo, six puces au maximum, une image au maximum.
+- Le nombre de diapos reste réaliste pour la durée de la séance.
 - Le discours va dans les notes, pas sur la diapo.
-- Chaque objectif est cité dans une note `> Objectif : O1` sur au moins une diapo.
+- Chaque objectif de la séance est cité dans une note `> Objectif : O1` sur au moins une diapo.
 - N'utilise que des images fournies par le prof. S'il en manque une, décris-la dans les notes : « Image à ajouter : … ».
 - Toute information absente du cours source porte la mention `[À VÉRIFIER]`.
 

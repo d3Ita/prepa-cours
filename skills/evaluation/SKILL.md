@@ -1,11 +1,11 @@
 ---
 name: evaluation
-description: Crée une évaluation et son corrigé en Word/LibreOffice Writer, alignés sur objectifs.md et scenario.md. Ne corrige pas de copies d'élèves.
+description: Crée une évaluation finale facultative et son corrigé en Word/LibreOffice Writer, sur l'ensemble du cours. Pour le QCM d'une séance, utiliser le skill qcm. Ne corrige pas de copies d'élèves.
 ---
 
-# Créer l'évaluation
+# Créer l'évaluation finale
 
-Écris `evaluation.md` et `corrige.md`. Formats disponibles : titres (`#`, `##`), puces (`- `), listes numérotées (`1. `), `**gras**`, tableaux Markdown, et `[réponse: 4]` seul sur une ligne pour laisser 4 lignes de réponse à l'élève.
+Crée-la à la racine du dossier du cours, seulement si le prof en demande une. Écris `evaluation.md` et `corrige.md`. Formats disponibles : titres (`#`, `##`), puces (`- `), listes numérotées (`1. `), `**gras**`, tableaux Markdown, et `[réponse: 4]` seul sur une ligne pour laisser 4 lignes de réponse à l'élève.
 
 ```markdown
 # Évaluation : titre
@@ -27,7 +27,7 @@ Si un `.docx` existe déjà, sauvegarde avec `versions.py sauver`, demande au pr
 ## Règles
 
 - Chaque question évalue un objectif : indique O1, O2… dans `corrige.md`, pas dans le sujet.
-- N'évalue que ce qui a été vu dans le scénario.
+- N'évalue que ce qui a été vu dans les scénarios.
 - Écris chaque barème sous la forme `(5 points)` et le total sous la forme `Total : 20 points`.
 - Le temps estimé pour un élève est réaliste par rapport à la durée prévue.
 - Le corrigé donne la réponse attendue et les critères d'attribution des points.

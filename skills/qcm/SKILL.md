@@ -1,0 +1,50 @@
+---
+name: qcm
+description: Crée le QCM de 5 questions d'une séance et son corrigé, à imprimer depuis Word ou LibreOffice. À utiliser quand un prof demande un QCM, un quiz ou un test rapide pour une séance.
+argument-hint: "[numéro de séance]"
+---
+
+# Créer le QCM d'une séance
+
+Chaque séance a exactement **5 questions**. Lis `objectifs.md` et `seance-N/scenario.md`, puis écris `seance-N/qcm.md` et `seance-N/qcm-corrige.md`.
+
+`qcm.md` :
+
+```markdown
+# QCM : séance 1
+Nom : ____________________  Date : ____________
+
+## Question 1
+Par où la plante absorbe-t-elle l'eau ?
+A. Par les feuilles
+B. Par les racines
+C. Par les fleurs
+D. Par la tige
+```
+
+`qcm-corrige.md` :
+
+```markdown
+# Corrigé du QCM : séance 1
+
+Question 1 : B (O1) — L'eau entre par les racines.
+```
+
+Génère ensuite les fichiers à imprimer, depuis le dossier du cours :
+
+`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/generer.py" docx seance-N/qcm.md seance-N/qcm.docx --outils "${CLAUDE_PLUGIN_DATA}"`
+
+`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/generer.py" docx seance-N/qcm-corrige.md seance-N/qcm-corrige.docx --outils "${CLAUDE_PLUGIN_DATA}"`
+
+Si un `.docx` existe déjà, sauvegarde avec `versions.py sauver`, demande au prof, puis ajoute `--ecraser` seulement s'il accepte.
+
+## Règles
+
+- Quatre choix de A à D, une seule bonne réponse.
+- N'interroge que sur ce qui a été vu pendant cette séance.
+- Couvre tous les objectifs de la séance avec les 5 questions, et cite-les seulement dans le corrigé. Si une séance a plus de 5 objectifs, signale-le au prof.
+- Varie la place de la bonne réponse.
+- Les mauvaises réponses sont plausibles et de longueur comparable à la bonne, sans piège de vocabulaire.
+- Évite « toutes les réponses », « aucune réponse » et les formulations négatives.
+- Toute réponse absente du cours porte la mention `[À VÉRIFIER]` dans le corrigé.
+- Signale au prof de relire le corrigé. Ne corrige pas de copies d'élèves.

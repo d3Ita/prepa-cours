@@ -51,7 +51,7 @@ class TestScripts(unittest.TestCase):
         with zipfile.ZipFile(self.d / "c.odt", "w") as z:
             z.writestr("content.xml", xml)
         self.assertEqual(lancer("extraire_texte.py", "c.odt", dossier=self.d).stdout.split("\n")[:2],
-                         ["Titre", "Un texte"])
+                         ["## Titre", "Un texte"])
 
     def test_refuse_decraser_sans_demande(self):
         (self.d / "d.md").write_text(DIAPOS, encoding="utf-8")
@@ -132,38 +132,111 @@ class TestScripts(unittest.TestCase):
         self.assertIn("Ajouté : Nouvelle idée", r.stdout)
 
     def ecrire_cours(self, **remplacements):
+        """Écrit un cours valide de deux séances ; une clé « s1_qcm » désigne seance-1/qcm.md."""
+        qcm = "".join(f"## Question {i}\nÉnoncé\nA. un\nB. deux\nC. trois\nD. quatre\n" for i in range(1, 6))
+        reponses = "".join(f"Question {i} : {l} (O1, O2)\n" for i, l in enumerate("ABCDA", 1))
         fichiers = {
-            "objectifs.md": "Durée : 30 min\n- O1 : définir\n- O2 : identifier\n",
-            "scenario.md": "## 0-10 min — A\n- O1\n## 10-30 min — B\n- O2\n",
-            "diapos.md": "# Un\n- x\n> Objectif : O1\n> Objectif : O2\n",
-            "evaluation.md": "Total : 10 points\n## Q1 (4 points)\n## Q2 (6 points)\n",
-            "corrige.md": "Q1 : O1\nQ2 : O2\n",
+            "objectifs": ("objectifs.md", "Durée totale : 2 h 30\n- O1 : définir\n- O2 : identifier\n\n"
+                                          "Séance 1 : 1 h 30 — O1\nSéance 2 : 1 h — O2\n"),
         }
-        fichiers.update(remplacements)
-        for nom, texte in fichiers.items():
-            (self.d / nom).write_text(texte, encoding="utf-8")
+        for n, duree, objectif in ((1, 90, "O1"), (2, 60, "O2")):
+            fichiers[f"s{n}_scenario"] = (f"seance-{n}/scenario.md", f"## 0-20 min — A\n- {objectif}\n## 20-{duree} min — B\n")
+            fichiers[f"s{n}_diapos"] = (f"seance-{n}/diapos.md", f"# Un\n- x\n> Objectif : {objectif}\n")
+            fichiers[f"s{n}_qcm"] = (f"seance-{n}/qcm.md", qcm)
+            fichiers[f"s{n}_corrige"] = (f"seance-{n}/qcm-corrige.md",
+                                         reponses.replace("(O1, O2)", f"({objectif})"))
+        for cle, texte in remplacements.items():
+            fichiers[cle] = (fichiers[cle][0], texte)
+        for chemin, texte in fichiers.values():
+            (self.d / chemin).parent.mkdir(exist_ok=True)
+            (self.d / chemin).write_text(texte, encoding="utf-8")
 
     def test_controle_cours_coherent(self):
         self.ecrire_cours()
         r = lancer("controler.py", dossier=self.d)
         self.assertEqual(r.returncode, 0, r.stdout)
-        self.assertIn("Barème : 10 points", r.stdout)
+        self.assertIn("2 séance(s), 150 min", r.stdout)
 
     def test_controle_detecte_les_problemes(self):
+        qcm_4 = "".join(f"## Question {i}\nA. un\nB. deux\nC. trois\n" for i in range(1, 5))
+        qcm_5 = qcm_4 + "## Question 5\nA. un\nB. deux\nC. trois\n"
+        reponses = "Question 1 : A (O1)\nQuestion 2 : B\nQuestion 3 : C\nQuestion 4 : A\nQuestion 5 : B\n"
         cas = {
-            "O2 n'est pas couvert dans corrige.md": {"corrige.md": "Q1 : O1\n"},
-            "cite O9": {"corrige.md": "Q1 : O1\nQ2 : O2\nQ3 : O9\n"},
-            "attendu un début à 10": {"scenario.md": "## 0-10 min\n- O1\n## 15-30 min\n- O2\n"},
-            "annonce 30 min": {"scenario.md": "## 0-10 min\n- O1\n## 10-25 min\n- O2\n"},
-            "totalisent 9 points": {"evaluation.md": "Total : 10 points\n## Q1 (4 points)\n## Q2 (5 points)\n"},
-            "7 puces": {"diapos.md": "# Un\n> O1 O2\n" + "- x\n" * 7},
+            "4 question(s) au lieu de 5": {"s1_qcm": qcm_4},
+            "question 2 du QCM a moins": {"s1_qcm": qcm_5.replace("C. trois\n", "", 2)},
+            "ne donne pas la réponse à la question 5": {"s1_corrige": reponses.replace("Question 5 : B\n", "")},
+            "réponse E de la question 1": {"s1_corrige": reponses.replace("1 : A", "1 : E"), "s1_qcm": qcm_5},
+            "toutes les bonnes réponses": {"s1_corrige": "".join(f"Question {i} : A (O1)\n" for i in range(1, 6)),
+                                           "s1_qcm": qcm_5},
+            "ne doit pas citer les objectifs": {"s1_qcm": qcm_5 + "O1\n"},
+            "O1 n'est pas couvert dans diapos.md": {"s1_diapos": "# Un\n- x\n"},
+            "début attendu à 20": {"s1_scenario": "## 0-20 min\n- O1\n## 25-90 min\n"},
+            "dure 60 min pour une séance de 90": {"s1_scenario": "## 0-60 min\n- O1\n"},
+            "totalisent 150 min": {"objectifs": "Durée totale : 3 h\n- O1 : a\n- O2 : b\n\n"
+                                                "Séance 1 : 1 h 30 — O1\nSéance 2 : 1 h — O2\n"},
+            "O2 n'est attribué": {"objectifs": "- O1 : a\n- O2 : b\n\nSéance 1 : 1 h 30 — O1\nSéance 2 : 1 h — O1\n"},
+            "seance-2 ne correspond": {"objectifs": "- O1 : a\n\nSéance 1 : 1 h 30 — O1\n"},
+            "durée illisible": {"objectifs": "- O1 : a\n- O2 : b\n\nSéance 1 : bientôt — O1\nSéance 2 : 1 h — O2\n"},
+            "7 puces": {"s1_diapos": "# Un\n> O1\n" + "- x\n" * 7},
         }
         for attendu, remplacement in cas.items():
             with self.subTest(attendu):
                 self.ecrire_cours(**remplacement)
                 r = lancer("controler.py", dossier=self.d)
-                self.assertEqual(r.returncode, 1)
+                self.assertEqual(r.returncode, 1, r.stdout)
                 self.assertIn(attendu, r.stdout)
+
+    def test_controle_evaluation_finale_facultative(self):
+        self.ecrire_cours()
+        (self.d / "evaluation.md").write_text("Total : 10 points\n## Q (9 points)\n", encoding="utf-8")
+        r = lancer("controler.py", dossier=self.d)
+        self.assertIn("corrige.md est absent", r.stdout)
+        self.assertIn("totalisent 9 points", r.stdout)
+
+    def test_durees_lisibles(self):
+        sys.path.insert(0, str(SCRIPTS))
+        self.addCleanup(sys.path.remove, str(SCRIPTS))
+        from controler import minutes
+
+        for texte, attendu in (("2 h", 120), ("1h30", 90), ("1 h 30", 90), ("1 h 30 min", 90),
+                               ("2 heures", 120), ("55 min", 55), ("demain", None), ("", None)):
+            self.assertEqual(minutes(texte), attendu, texte)
+
+    def test_lecture_des_cours_texte_word_et_libreoffice(self):
+        import zipfile
+        from docx import Document
+
+        doc = Document()
+        doc.add_heading("Chapitre un", level=1)
+        doc.add_paragraph("Texte Word")
+        doc.save(self.d / "c.docx")
+        self.assertEqual(lancer("extraire_texte.py", "c.docx", dossier=self.d).stdout.splitlines(),
+                         ["## Chapitre un", "Texte Word"])
+
+        with zipfile.ZipFile(self.d / "c.odt", "w") as z:
+            z.writestr("content.xml", '<d xmlns:t="urn:oasis:names:tc:opendocument:xmlns:text:1.0">'
+                                      "<t:h>Chapitre</t:h><t:p>Texte</t:p></d>")
+        self.assertEqual(lancer("extraire_texte.py", "c.odt", dossier=self.d).stdout.splitlines(),
+                         ["## Chapitre", "Texte"])
+
+        (self.d / "utf8.txt").write_text("Séance", encoding="utf-8")
+        (self.d / "windows.txt").write_bytes("Séance".encode("cp1252"))
+        for nom in ("utf8.txt", "windows.txt"):
+            self.assertEqual(lancer("extraire_texte.py", nom, dossier=self.d).stdout.strip(), "Séance")
+
+    def test_ancien_format_word_explique(self):
+        (self.d / "c.doc").write_bytes(b"binaire")
+        r = lancer("extraire_texte.py", "c.doc", dossier=self.d)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("docx, odt ou txt", r.stderr)
+
+    def test_qcm_docx(self):
+        from docx import Document
+
+        (self.d / "q.md").write_text("# QCM\n## Question 1\nÉnoncé\nA. Un\nB. Deux\n", encoding="utf-8")
+        self.assertEqual(lancer("generer.py", "docx", "q.md", "q.docx", dossier=self.d).returncode, 0)
+        self.assertEqual([p.text for p in Document(self.d / "q.docx").paragraphs],
+                         ["QCM", "Question 1", "Énoncé", "A. Un", "B. Deux"])
 
     def test_exemple_du_depot_est_coherent(self):
         exemple = Path(__file__).resolve().parent.parent / "exemples" / "photosynthese"
