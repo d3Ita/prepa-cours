@@ -21,7 +21,7 @@ sys.path[:0] = [{str(RACINE / 'scripts')!r}, {str(RACINE / 'benchmark/fixtures')
 import cas
 json.dump(sys.argv[1:], open("arguments.json", "w", encoding="utf-8"))
 if os.environ.get("FAUX_CLAUDE") == "echec":
-    print("erreur simulée", file=sys.stderr)
+    print("erreur du faux Claude", file=sys.stderr)
     sys.exit(3)
 if os.environ.get("FAUX_CLAUDE") != "vide":
     cas.materialiser(cas.trouver("01_coherent"), ".")
@@ -149,7 +149,7 @@ class TestClaude(Base):
         ligne = self.lignes("essai")[0]
         self.assertEqual((ligne["run_status"], ligne["objective_coverage"]), ("failed", None))
         self.assertIn("Code de sortie 3", ligne["error"])
-        self.assertIn("erreur simulée", (self.sorties / "essai/single_agent/01_coherent/repetition-1/run.log").read_text(encoding="utf-8"))
+        self.assertIn("erreur du faux Claude", (self.sorties / "essai/single_agent/01_coherent/repetition-1/run.log").read_text(encoding="utf-8"))
         texte = benchmark.rapporter("essai", self.sorties, self.rapports)
         self.assertIn("Runs: 1, failed: 1", texte)
         self.assertIn("Objective coverage: non mesuré", texte)

@@ -127,9 +127,7 @@ def rapporter(identifiant=None, sorties=SORTIES, rapports=RAPPORTS):
     cible = Path(rapports) / identifiant
     mesures.exporter(lignes, cible)
     (cible / "report.txt").write_text(texte, encoding="utf-8")
-    print(texte)
-    print(f"Rapport : {cible}")
-    return texte
+    return f"{texte}\nRapport : {cible}"
 
 
 def main():
@@ -160,7 +158,7 @@ def main():
     if a.commande == "verify":
         sys.exit(1 if verifier() else 0)
     if a.commande == "report":
-        rapporter(a.run_id, a.output_dir, a.reports_dir)
+        print(rapporter(a.run_id, a.output_dir, a.reports_dir))
         return
     if a.repetitions < 1:
         sys.exit("--repetitions doit valoir au moins 1.")
@@ -174,7 +172,7 @@ def main():
         runner = ClaudeRunner(a.claude, a.model, a.timeout, a.max_revisions)
     else:
         runner = FixtureRunner()
-    rapporter(lancer(runner, a.modes, choisis, a.repetitions, a.run_id, a.output_dir), a.output_dir, a.reports_dir)
+    print(rapporter(lancer(runner, a.modes, choisis, a.repetitions, a.run_id, a.output_dir), a.output_dir, a.reports_dir))
 
 
 if __name__ == "__main__":
