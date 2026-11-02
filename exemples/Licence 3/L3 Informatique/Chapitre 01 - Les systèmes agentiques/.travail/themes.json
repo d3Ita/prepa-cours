@@ -1,0 +1,16 @@
+{
+  "atelier": {
+    "fond": "EEF3F8",
+    "titre": "1D3557",
+    "texte": "1F2933",
+    "accent": "2A6FBB",
+    "police": "Trebuchet MS"
+  },
+  "alerte": {
+    "fond": "FFF4F0",
+    "titre": "8F2A12",
+    "texte": "2B1A16",
+    "accent": "B93C1C",
+    "police": "Georgia"
+  }
+}
