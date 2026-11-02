@@ -187,6 +187,9 @@ def vers_docx(texte, sortie):
 
 
 def main():
+    # Sous Windows, la sortie par défaut n'est pas en UTF-8 et abîme les accents.
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("format", choices=["pptx", "docx"])
     p.add_argument("source", type=Path)

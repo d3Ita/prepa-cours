@@ -106,8 +106,9 @@ def restaurer(version, fichier):
 
 
 if __name__ == "__main__":
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")
+    # Sous Windows, la sortie par défaut n'est pas en UTF-8 et abîme les accents.
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     args = sys.argv[1:]
     if len(args) == 2 and args[0] == "sauver":
         sauver(args[1])

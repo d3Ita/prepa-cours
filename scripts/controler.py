@@ -89,8 +89,9 @@ def controler(dossier):
 
 
 if __name__ == "__main__":
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")
+    # Sous Windows, la sortie par défaut n'est pas en UTF-8 et abîme les accents.
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     problemes, infos = controler(Path(sys.argv[1] if len(sys.argv) > 1 else "."))
     for ligne in infos:
         print(f"Info : {ligne}")

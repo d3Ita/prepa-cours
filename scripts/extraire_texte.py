@@ -52,10 +52,11 @@ def extraire(fichier):
 
 
 if __name__ == "__main__":
+    # Sous Windows, la sortie par défaut n'est pas en UTF-8 et abîme les accents.
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     if len(sys.argv) != 2:
         sys.exit(__doc__)
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")
     try:
         print("\n".join(extraire(sys.argv[1])))
     except (OSError, KeyError, zipfile.BadZipFile, ET.ParseError) as e:
