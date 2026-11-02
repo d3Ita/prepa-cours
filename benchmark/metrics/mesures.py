@@ -13,26 +13,34 @@ from qualite import construire_rapport
 ETAPE = "livrables"
 # La méthode de chaque métrique : aucun résultat ne doit pouvoir passer pour plus solide qu'il n'est.
 METHODES = {
-    "objective_coverage": "deterministic", "timing_validity": "deterministic", "evaluation_quality": "deterministic+llm_critic",
-    "content_completeness": "deterministic", "hallucination_count": "deterministic_heuristic+llm_critic",
-    "critical_error_count": "deterministic+llm_critic", "warning_count": "deterministic+llm_critic", "human_interventions": "recorded",
-    "revision_count": "recorded", "generation_time": "measured_by_runner", "accuracy": "llm_critic",
+    "objective_coverage": "deterministic", "timing_validity": "deterministic", "evaluation_quality": "deterministic",
+    "content_completeness": "deterministic", "hallucination_count": "deterministic_heuristic", "critical_error_count": "deterministic",
+    "warning_count": "deterministic", "human_interventions": "recorded", "revision_count": "recorded",
+    "generation_time": "measured_by_runner", "accuracy": "llm_critic", "critic_critical_count": "llm_critic",
 }
 COLONNES = list(METHODES)
 
 
 def mesurer(chapitre, execution=None):
-    """Renvoie les métriques d'un chapitre. `execution` apporte ce que seul l'exécuteur connaît."""
+    """Renvoie les métriques d'un chapitre. `execution` apporte ce que seul l'exécuteur connaît.
+
+    Seul le mode multi-agent lance sa critique : compter ses constats pénaliserait ce mode pour avoir cherché.
+    Les compteurs comparés viennent donc du code seul, et la critique reste dans des colonnes à part.
+    """
     execution = execution or {}
-    rapport = construire_rapport(chapitre, ETAPE)
-    m = rapport["metriques"]
-    temps = [c for c in rapport["constats"] if c["category"] == "timing" and c["severity"] != "info"]
+    code = construire_rapport(chapitre, ETAPE, avec_critique=False, ecrire=False)
+    complet = construire_rapport(chapitre, ETAPE)
+    m = code["metriques"]
+    temps = [c for c in code["constats"] if c["category"] == "timing" and c["severity"] != "info"]
     interventions = m["human_interventions"] if execution.get("human_interventions_recorded") else None
+    critique_ok = complet["critique"] == "ok"
     return {"objective_coverage": m["objective_coverage"], "timing_validity": not temps, "evaluation_quality": m["evaluation_quality"],
             "content_completeness": m["content_completeness"], "hallucination_count": m["hallucination_count"],
             "critical_error_count": m["critical_error_count"], "warning_count": m["warning_count"], "human_interventions": interventions,
-            "revision_count": m["revision_count"], "generation_time": execution.get("generation_time"), "accuracy": m["accuracy"],
-            "critic": rapport["critique"], "status": rapport["statut"]}
+            "revision_count": m["revision_count"], "generation_time": execution.get("generation_time"),
+            "accuracy": complet["metriques"]["accuracy"] if critique_ok else None,
+            "critic_critical_count": complet["critiques"] - code["critiques"] if critique_ok else None,
+            "critic": complet["critique"], "status": complet["statut"]}
 
 
 def verifier_cas(cas, chapitre):

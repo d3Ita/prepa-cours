@@ -99,6 +99,17 @@ class TestMesures(Base):
         self.assertIsNone(m["accuracy"])
         self.assertEqual(m["critic"], "absente")
 
+    def test_critique_d_un_mode_ne_change_pas_les_compteurs_compares(self):
+        self.chapitre("01_coherent")
+        sans = mesures.mesurer(self.d)
+        fixtures.ecrire_critique(self.d, constats=[fixtures.constat("critical", "factual"), fixtures.constat("warning", "hallucination", provenance="externe")])
+        avec = mesures.mesurer(self.d)
+        for metrique in ("critical_error_count", "warning_count", "hallucination_count", "evaluation_quality", "timing_validity"):
+            self.assertEqual(avec[metrique], sans[metrique], metrique)
+        self.assertEqual(avec["critic_critical_count"], 1)
+        self.assertEqual(avec["accuracy"], 48)
+        self.assertEqual(avec["status"], "HUMAN_REVIEW_REQUIRED")
+
     def test_valeurs_de_l_executeur(self):
         self.chapitre("01_coherent")
         m = mesures.mesurer(self.d, {"generation_time": 12.5, "human_interventions_recorded": True})

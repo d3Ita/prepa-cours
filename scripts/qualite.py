@@ -339,10 +339,11 @@ def afficher_quality_report(q):
     print(f"Revisions: {q['revisions']['count']}\nHuman interventions: {q['human_interventions']['count']}\n\nSTATUS: {q['status']}")
 
 
-def construire_rapport(chapitre, etape):
+def construire_rapport(chapitre, etape, avec_critique=True, ecrire=True):
+    """Sans la critique, le rapport repose sur le code seul : c'est la mesure comparable entre deux architectures."""
     matrice = construire(chapitre)
     couvertures = couverture(matrice, etape)
-    critique, etat_critique = lire_critique(chapitre, etape)
+    critique, etat_critique = lire_critique(chapitre, etape) if avec_critique else ([], "non utilisée")
     completude, constats_completude = mesurer_completude(chapitre, etape)
     constats = controler_etape(chapitre, etape) + controler_couverture(matrice, etape) \
         + constats_completude + verifier_sources(chapitre, etape) + critique
@@ -363,6 +364,8 @@ def construire_rapport(chapitre, etape):
                "critique": etat_critique, "critiques": critiques, "avertissements": avertissements, "statut": statut,
                "scores": scores, "couverture": couvertures, "constats": constats}
     rapport["metriques"] = metriques(rapport, chapitre)
+    if not ecrire:
+        return rapport
     revue = Path(chapitre) / ".travail" / "revue"
     revue.mkdir(parents=True, exist_ok=True)
     (revue / "qualite.json").write_text(json.dumps(rapport, ensure_ascii=False, indent=2), encoding="utf-8")
