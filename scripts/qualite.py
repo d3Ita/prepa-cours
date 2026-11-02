@@ -4,6 +4,7 @@
 Usage : qualite.py rapport [chapitre] --etape decoupage|scenarios|livrables [--json]
         qualite.py decider [chapitre] --etape ... --max-cycles 2
         qualite.py valider [chapitre] --etape ... --decision valider|modifier|relancer
+        qualite.py quality-report [chapitre] --etape ...
 
 Seule la commande « valider », lancée après la réponse du prof, peut marquer une étape comme validée.
 """
@@ -17,13 +18,15 @@ from pathlib import Path
 from controler import controler, lire
 from evaluations import verifier
 from extraire_texte import extraire
-from matrice import ETAPES, NOMS_LIENS, construire, couverture, lire_phases
+from matrice import ETAPES, NOMS_LIENS, construire, couverture, lire_phases, parcourir
+from modele import construire_modele, ecrire_modele, id_objectif
+from redaction import lire_etat as lire_redaction
 
 CATEGORIES = ("factual", "pedagogical", "timing", "coherence", "evaluation", "hallucination")
 SEVERITES = ("critical", "warning", "info")
 PROVENANCES = ("source", "deduite", "externe", "incertaine")
 DIMENSIONS = {"exactitude": "Exactitude", "objectifs": "Objectifs", "coherence": "Cohérence",
-              "progression": "Progression", "timing": "Timing", "evaluation": "Évaluation"}
+              "progression": "Progression", "timing": "Timing", "evaluation": "Évaluation", "completude": "Complétude"}
 DIMENSION_DE = {"factual": "exactitude", "hallucination": "exactitude", "pedagogical": "progression",
                 "timing": "timing", "coherence": "coherence", "evaluation": "evaluation"}
 # Seule la critique peut juger le fond : sans elle, ces dimensions restent « non évaluées ».
@@ -168,13 +171,50 @@ def controler_couverture(matrice, etape):
     return constats
 
 
+def mesurer_completude(chapitre, etape):
+    """Calcule la part de ce qui est attendu et bien présent : fichiers, notions et sections du cours.
+
+    Renvoie (score, constats). Un mot retrouvé ne prouve pas que la notion est bien traitée.
+    """
+    if etape == "decoupage":
+        return None, []
+    dossier = Path(chapitre) / ".travail"
+    donnees = parcourir(chapitre)
+    attendus = [dossier / f"seance-{s['numero']}" / f for s in donnees["seances"] for f in FICHIERS_ETAPE[etape]]
+    presents = sum(f.is_file() for f in attendus)
+    total = len(attendus)
+    produit = "\n".join(f.read_text(encoding="utf-8") for f in fichiers_produits(chapitre, etape)
+                        if f.name != "objectifs.md").casefold()
+    constats = []
+    for o in donnees["objectifs"]:
+        for notion in o["notions"]:
+            total += 1
+            if notion.casefold() in produit:
+                presents += 1
+            else:
+                constats.append(constat("warning", "coherence", o["id"], f"La notion « {notion} » n'apparaît dans aucun document produit.",
+                                        dimension="completude", suggestion="Traiter cette notion ou la retirer de l'objectif."))
+    for ligne in (lire_source(chapitre) or "").splitlines():
+        titre = re.match(r"#{1,6}\s+(.+)", ligne.strip())
+        mots = re.findall(r"\w{4,}", titre.group(1).casefold()) if titre else []
+        if not mots or titre.group(1).strip().casefold() == "sources utilisées":
+            continue
+        total += 1
+        if 2 * sum(m in produit for m in mots) >= len(mots):
+            presents += 1
+        else:
+            constats.append(constat("warning", "coherence", "Cours/", f"La section « {titre.group(1).strip()} » du cours n'apparaît pas dans les documents produits.",
+                                    dimension="completude", suggestion="Vérifier si cette section a été oubliée."))
+    return (round(100 * presents / total) if total else None), constats
+
+
 def expliquer(c):
     lieu = "" if c["location"] in c["problem"] else f" ({c['location']})"
     preuve = f" : {c['evidence']}" if c.get("evidence") else ""
     return f"{c['problem']}{lieu}{preuve}"
 
 
-def calculer_scores(constats, couvertures, etat_critique, etape):
+def calculer_scores(constats, couvertures, etat_critique, etape, completude=None):
     scores = {}
     for dimension, libelle in DIMENSIONS.items():
         concernes = [c for c in constats if c.get("dimension", DIMENSION_DE[c["category"]]) == dimension]
@@ -182,12 +222,14 @@ def calculer_scores(constats, couvertures, etat_critique, etape):
             scores[dimension] = {"libelle": libelle, "score": None, "details": [f"Non évaluée : critique {etat_critique}."]
                                  + [expliquer(c) for c in concernes]}
             continue
-        if dimension == "evaluation" and etape != "livrables":
+        if (dimension == "evaluation" and etape != "livrables") or (dimension == "completude" and completude is None):
             scores[dimension] = {"libelle": libelle, "score": None, "details": ["Pas encore produite à cette étape."]}
             continue
         if dimension == "objectifs":
             valeurs = [c["pourcentage"] for c in couvertures.values()]
             score = round(sum(valeurs) / len(valeurs)) if valeurs else 0
+        elif dimension == "completude":
+            score = completude
         else:
             score = max(0, 100 - sum(PENALITES[c["severity"]] for c in concernes))
         scores[dimension] = {"libelle": libelle, "score": score,
@@ -209,8 +251,29 @@ def validee_par_le_prof(chapitre, etape):
     return not any(f.stat().st_mtime > chemin.stat().st_mtime for f in dossier.rglob("*.md"))
 
 
+def interventions_humaines(chapitre):
+    """Rassemble chaque décision du prof : validation d'étape, validation du cours, modification appliquée."""
+    actions = {"valider": "approve", "modifier": "modify", "relancer": "rerun"}
+    liste = [{"stage": v["etape"], "action": actions[v["decision"]], "date": v["date"]} for v in validations(chapitre)]
+    redaction = lire_redaction(chapitre) or {}
+    liste += [{"stage": "redaction", "action": "approve", "date": v["date"]} for v in redaction.get("validations", [])]
+    journal = Path(chapitre) / ".travail" / "revue" / "modifications.json"
+    if journal.is_file():
+        liste += [{"stage": "modification", "action": "apply", "date": m["date"]}
+                  for m in json.loads(journal.read_text(encoding="utf-8"))]
+    return sorted(liste, key=lambda i: i["date"])
+
+
+def historique_revisions(chapitre):
+    return lire_etat(chapitre).get("historique", [])
+
+
+def compter_revisions(chapitre):
+    return sum(h["decision"].startswith("REVISION ") for h in historique_revisions(chapitre))
+
+
 def metriques(rapport, chapitre):
-    """Les mesures communes à la comparaison agent unique / multi-agent décrite dans experiences/protocole.md."""
+    """Les mesures communes à la comparaison agent unique / multi-agent décrite dans docs/methodology.md."""
     scores = rapport["scores"]
     valeurs = lambda *noms: [scores[n]["score"] for n in noms if scores[n]["score"] is not None]
     moyenne = lambda v: round(sum(v) / len(v)) if v else None
@@ -218,17 +281,72 @@ def metriques(rapport, chapitre):
     non_marquees = [c for c in rapport["constats"] if c["category"] == "hallucination" and c["severity"] != "info"]
     return {"accuracy": scores["exactitude"]["score"], "pedagogical_coherence": moyenne(valeurs("coherence", "progression")),
             "objective_coverage": scores["objectifs"]["score"], "timing_validity": scores["timing"]["score"],
-            "evaluation_quality": scores["evaluation"]["score"], "hallucination_rate": round(len(non_marquees) / fichiers, 2),
-            "human_interventions": len(validations(chapitre)), "generation_time": None}
+            "evaluation_quality": scores["evaluation"]["score"], "content_completeness": scores["completude"]["score"],
+            "hallucination_rate": round(len(non_marquees) / fichiers, 2), "hallucination_count": len(non_marquees),
+            "critical_error_count": rapport["critiques"], "warning_count": rapport["avertissements"],
+            "human_interventions": len(interventions_humaines(chapitre)), "revision_count": compter_revisions(chapitre),
+            "generation_time": None}
+
+
+METHODE_CODE = "deterministic"
+METHODE_MIXTE = "deterministic+llm_critic"
+METHODE_ABSENTE = "not_evaluated"
+
+
+def score_explique(rapport, *dimensions, methode):
+    """Le score, sa méthode de calcul et ses explications : un chiffre seul n'est jamais rendu."""
+    disponibles = [rapport["scores"][d] for d in dimensions if rapport["scores"][d]["score"] is not None]
+    valeur = round(sum(s["score"] for s in disponibles) / len(disponibles)) if disponibles else None
+    return {"value": valeur, "method": methode if valeur is not None else METHODE_ABSENTE,
+            "explanation": [ligne for d in dimensions for ligne in rapport["scores"][d]["details"]]}
+
+
+def construire_quality_report(chapitre, rapport):
+    critique_ok = rapport["critique"] == "ok"
+    mixte = METHODE_MIXTE if critique_ok else METHODE_CODE
+    details = {
+        "accuracy_score": score_explique(rapport, "exactitude", methode=METHODE_MIXTE),
+        "objective_coverage_score": score_explique(rapport, "objectifs", methode=METHODE_CODE),
+        "pedagogical_coherence_score": score_explique(rapport, "coherence", "progression", methode=mixte),
+        "timing_score": score_explique(rapport, "timing", methode=mixte),
+        "evaluation_score": score_explique(rapport, "evaluation", methode=mixte),
+        "content_completeness_score": score_explique(rapport, "completude", methode=METHODE_CODE),
+    }
+    trace = construire_modele(chapitre)["traceability"]
+    couverture_objectifs = []
+    for source, c in rapport["couverture"].items():
+        oid = id_objectif(source)
+        couverture_objectifs.append({"id": oid, "source_id": source, "percentage": c["pourcentage"],
+                                     "missing": c["manquants"], "status": trace[oid]["status"], "explanation": trace[oid]["explanation"]})
+    tries = {s: [c for c in rapport["constats"] if c["severity"] == s] for s in SEVERITES}
+    interventions = interventions_humaines(chapitre)
+    return {"schema_version": 1, "stage": rapport["etape"], "status": rapport["statut"], "overall_score": rapport["global"],
+            "partial": rapport["partiel"], "critic": rapport["critique"], **{k: v["value"] for k, v in details.items()}, "score_details": details,
+            "critical_issues": tries["critical"], "warnings": tries["warning"], "infos": tries["info"], "objective_coverage": couverture_objectifs,
+            "human_interventions": {"count": len(interventions), "events": interventions},
+            "revisions": {"count": compter_revisions(chapitre), "history": historique_revisions(chapitre)}}
+
+
+def afficher_quality_report(q):
+    libelles = (("accuracy_score", "Accuracy"), ("objective_coverage_score", "Objective coverage"),
+                ("pedagogical_coherence_score", "Pedagogical coherence"), ("timing_score", "Timing"),
+                ("evaluation_score", "Evaluation"), ("content_completeness_score", "Content completeness"))
+    print(f"QUALITY REPORT\n\nOverall: {q['overall_score']}/100" + (" (partial)" if q["partial"] else "") + "\n")
+    for cle, libelle in libelles:
+        detail = q["score_details"][cle]
+        print(f"{libelle}: {detail['value'] if detail['value'] is not None else 'not evaluated'} [{detail['method']}]")
+    print(f"\nCritical issues: {len(q['critical_issues'])}\nWarnings: {len(q['warnings'])}\nInfos: {len(q['infos'])}")
+    print(f"Revisions: {q['revisions']['count']}\nHuman interventions: {q['human_interventions']['count']}\n\nSTATUS: {q['status']}")
 
 
 def construire_rapport(chapitre, etape):
     matrice = construire(chapitre)
     couvertures = couverture(matrice, etape)
     critique, etat_critique = lire_critique(chapitre, etape)
+    completude, constats_completude = mesurer_completude(chapitre, etape)
     constats = controler_etape(chapitre, etape) + controler_couverture(matrice, etape) \
-        + verifier_sources(chapitre, etape) + critique
-    scores = calculer_scores(constats, couvertures, etat_critique, etape)
+        + constats_completude + verifier_sources(chapitre, etape) + critique
+    scores = calculer_scores(constats, couvertures, etat_critique, etape, completude)
     evalues = [s["score"] for s in scores.values() if s["score"] is not None]
     critiques = sum(c["severity"] == "critical" for c in constats)
     avertissements = sum(c["severity"] == "warning" for c in constats)
@@ -248,6 +366,9 @@ def construire_rapport(chapitre, etape):
     revue = Path(chapitre) / ".travail" / "revue"
     revue.mkdir(parents=True, exist_ok=True)
     (revue / "qualite.json").write_text(json.dumps(rapport, ensure_ascii=False, indent=2), encoding="utf-8")
+    (revue / "quality_report.json").write_text(
+        json.dumps(construire_quality_report(chapitre, rapport), ensure_ascii=False, indent=2), encoding="utf-8")
+    ecrire_modele(chapitre)
     return rapport
 
 
@@ -299,15 +420,25 @@ def decider(chapitre, etape, max_cycles):
     rapport = construire_rapport(chapitre, etape)
     if rapport["critique"] != "ok":
         return f"DECISION: CRITIQUE_REQUISE (critique {rapport['critique']})"
-    if not rapport["critiques"] and not rapport["avertissements"]:
-        return "DECISION: VALIDATION_HUMAINE"
     etat = lire_etat(chapitre)
     cycles = etat["cycles"].get(etape, 0)
+
+    def tracer(decision):
+        etat.setdefault("historique", []).append(
+            {"stage": etape, "date": time.strftime("%Y-%m-%dT%H:%M:%S"), "decision": decision, "cycle": cycles,
+             "issues": rapport["critiques"] + rapport["avertissements"], "critical": rapport["critiques"]})
+        ecrire_etat(chapitre, etat)
+
+    if not rapport["critiques"] and not rapport["avertissements"]:
+        tracer("HUMAN_VALIDATION")
+        return "DECISION: VALIDATION_HUMAINE"
     if cycles >= max_cycles:
+        tracer("REVISION_LIMIT_REACHED")
         return "⚠ Révision maximale atteinte.\nUne validation humaine est requise.\nDECISION: VALIDATION_HUMAINE"
-    etat["cycles"][etape] = cycles + 1
-    ecrire_etat(chapitre, etat)
-    return f"DECISION: REVISION {cycles + 1}/{max_cycles}"
+    cycles += 1
+    etat["cycles"][etape] = cycles
+    tracer(f"REVISION {cycles}/{max_cycles}")
+    return f"DECISION: REVISION {cycles}/{max_cycles}"
 
 
 def valider(chapitre, etape, decision):
@@ -332,7 +463,7 @@ def main():
     sys.stderr.reconfigure(encoding="utf-8")
     p = argparse.ArgumentParser(description=__doc__)
     sous = p.add_subparsers(dest="commande", required=True)
-    for nom in ("rapport", "decider", "valider"):
+    for nom in ("rapport", "decider", "valider", "quality-report"):
         c = sous.add_parser(nom)
         c.add_argument("chapitre", nargs="?", default=".")
         c.add_argument("--etape", choices=ETAPES, default="livrables")
@@ -352,7 +483,9 @@ def main():
         else:
             afficher(rapport)
         sys.exit(1 if rapport["critiques"] else 0)
-    if a.commande == "decider":
+    if a.commande == "quality-report":
+        afficher_quality_report(construire_quality_report(a.chapitre, construire_rapport(a.chapitre, a.etape)))
+    elif a.commande == "decider":
         print(decider(a.chapitre, a.etape, lire_max_cycles(a.max_cycles)))
     else:
         valider(a.chapitre, a.etape, a.decision)

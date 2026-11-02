@@ -297,7 +297,8 @@ class TestScore(Base):
         ecrire_critique(self.d)
         m = self.rapport()["metriques"]
         self.assertEqual(set(m), {"accuracy", "pedagogical_coherence", "objective_coverage", "timing_validity",
-                                  "evaluation_quality", "hallucination_rate", "human_interventions", "generation_time"})
+                                  "evaluation_quality", "content_completeness", "hallucination_rate", "hallucination_count",
+                                  "critical_error_count", "warning_count", "human_interventions", "revision_count", "generation_time"})
         self.assertEqual(m["objective_coverage"], 100)
 
     def test_chapitre_inconnu_explique(self):

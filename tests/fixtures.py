@@ -31,7 +31,8 @@ CATEGORIES = ("factual", "pedagogical", "timing", "coherence", "evaluation", "ha
 
 
 def scenario(objectif):
-    return (f"# Séance\n\n## 0-20 min — Découverte\n- Objectif visé : {objectif}\n"
+    return (f"# La digestion\n- Notions : estomac, sucs digestifs, intestin grêle, nutriments\n\n"
+            f"## 0-20 min — Découverte\n- Objectif visé : {objectif}\n"
             f"## 20-50 min — Activité : observer un schéma\n- Objectif visé : {objectif}\n"
             f"## 50-60 min — QCM\n- Objectif visé : {objectif}\n")
 
