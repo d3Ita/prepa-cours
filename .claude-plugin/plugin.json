@@ -1,7 +1,7 @@
 {
   "name": "prepa-cours",
   "displayName": "Prépa Cours",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Rédige un cours à partir de vos documents, vous laisse le réviser aussi longtemps que nécessaire, puis l'adapte à la matière, aux heures et aux séances : scénario minuté, diapos et QCM de 5 questions par séance, rangés par niveau, classe et chapitre, avec critique automatique, score qualité, modification ciblée, validation humaine et historique des versions.",
   "userConfig": {
     "dossier_cours": {

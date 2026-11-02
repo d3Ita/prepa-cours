@@ -5,9 +5,9 @@
 
 **Gardez tous vos cours bien rangés par niveau, classe et chapitre. Donnez un cours en Word, LibreOffice ou texte, indiquez la matière, vos heures et vos séances : récupérez pour chaque séance un scénario minuté, des diapos et un QCM de 5 questions, dans des fichiers que vous pouvez retoucher avec PowerPoint, Word ou LibreOffice.**
 
-*Claude Code plugin that organizes a teacher's courses by level, class and chapter, and fits a course to a subject and a given number of hours and sessions, then produces a lesson plan, slides and a 5-question quiz for each session, with version history. The plugin speaks French.*
+*A human-in-the-loop multi-agent LLM system for pedagogical course preparation. This Claude Code plugin organizes a teacher's courses, fits a course to a subject and a given number of hours and sessions, then produces a lesson plan, slides and a 5-question quiz for each session, with version history. The plugin speaks French.*
 
-> **Version 0.8 : préversion.** Les scripts sont testés automatiquement, mais le parcours complet avec les agents n'a pas encore été éprouvé sur de vrais cours. Le score qualité aide à repérer des problèmes, il ne garantit pas l'exactitude. Relisez toujours ce qui est produit, surtout les corrigés, avant de l'utiliser en classe.
+> **Version 0.9 : préversion.** Les scripts sont testés automatiquement, mais le parcours complet avec les agents n'a pas encore été éprouvé sur de vrais cours. Le score qualité aide à repérer des problèmes, il ne garantit pas l'exactitude. Relisez toujours ce qui est produit, surtout les corrigés, avant de l'utiliser en classe.
 
 ## Vos cours bien rangés
 
@@ -57,7 +57,17 @@ Human Validation        le prof : Valider, Modifier ou Relancer
 Final Outputs           Cours, Diapos, QCM, Evaluations, Corrections
 ```
 
-Le projet n'ajoute qu'un agent. Ce que du code peut vérifier de façon fiable (minutage, format, couverture, limite de révisions) reste dans les scripts ; le jugement sur le fond revient à l'agent `critique` ; la décision revient au prof.
+Ce que du code peut vérifier de façon fiable (minutage, format, couverture, limite de révisions) reste dans les scripts ; le jugement sur le fond revient à l'agent `critique` ; la décision revient au prof.
+
+| Rôle | Élément | Pourquoi il existe |
+| --- | --- | --- |
+| Analyzer, Planner | Skill `decoupage` | Traduire le cours en objectifs et en séances validés |
+| Generator | Agents `scenariste`, `concepteur-diapos`, `evaluateur` | Chaque format demande des règles différentes |
+| Critic | Agent `critique` | Juger le fond, ce que le code ne peut pas faire |
+| Evaluator | `controler.py`, `modele.py`, `qualite.py` | Calculer sans modèle de langage ce qui peut l'être |
+| Superviseur | Skill `cours` | Enchaîner les étapes et rendre la décision au prof |
+
+Deux agents complètent ces rôles avant et après le parcours : `redacteur` pour le premier cours et `modificateur` pour les retouches ciblées.
 
 | Commande | Ce qu'elle fait |
 | --- | --- |
@@ -166,8 +176,9 @@ Timing          72/100
 | Progression | Constats `pedagogical` |
 | Timing | Constats `timing` |
 | Évaluation | Constats `evaluation` |
+| Complétude | Fichiers, notions et sections du cours absents des documents : c'est la part retrouvée |
 
-Chaque dimension part de 100 et perd 40 points par problème `critical`, 12 par `warning` et 3 par `info`. Le score global est leur moyenne, plafonnée à 69 s'il reste un problème bloquant. Chaque point perdu est expliqué :
+Sauf Objectifs et Complétude, qui sont des pourcentages, chaque dimension part de 100 et perd 40 points par problème `critical`, 12 par `warning` et 3 par `info`. Le score global est leur moyenne, plafonnée à 69 s'il reste un problème bloquant. Chaque point perdu est expliqué :
 
 ```text
 Timing : 76/100
@@ -211,9 +222,67 @@ La critique distingue ce qui est présent dans le cours (`source`), déduit rais
 
 Les QCM de 5 questions par séance restent inchangés. Dans l'évaluation finale, une ligne `Type :` sous une question choisit parmi `qcm`, `vrai-faux`, `question-ouverte`, `exercice`, `etude-de-cas`, `probleme` et `reflexion`. Le dictionnaire `TYPES` de [`scripts/evaluations.py`](scripts/evaluations.py) associe à chaque type ses règles : ajouter un type revient à y ajouter une entrée.
 
-### Évaluer le système
+## Pedagogical Traceability
 
-[`experiences/protocole.md`](experiences/protocole.md) décrit comment comparer un agent unique et le système multi-agent. **Cette comparaison n'a pas encore été menée** : rien ne prouve à ce stade que la critique améliore les cours.
+`modele.py` calcule un modèle structuré du cours à partir des textes de `.travail`, sans modèle de langage et sans changer leur format. Il est enregistré dans `.travail/revue/course_model.json` :
+
+```text
+Course
+├── metadata : title, subject, level, duration, source
+├── objectives (OBJ-001)
+├── concepts (C-001)
+├── sessions (SES-001) : activities (ACT-001), resources (RES-001), exercises (EX-001)
+├── evaluations (EVAL-001)
+└── traceability
+```
+
+```text
+OBJ-001
+ ├── concepts : C-001, C-002
+ ├── sessions : SES-001
+ ├── activities : ACT-001, ACT-002
+ ├── resources : RES-001
+ ├── exercises : EX-001
+ └── evaluations : EVAL-001
+
+OBJECTIVE COVERAGE
+
+OBJ-001 ✓
+OBJ-002 ⚠ PARTIAL
+OBJ-003 ✗ MISSING
+```
+
+Les identifiants dépendent de l'ordre des textes : les mêmes fichiers donnent le même modèle, mais insérer une activité renumérote les suivantes. Pour voir ce modèle :
+
+```bash
+python3 scripts/modele.py "<dossier du chapitre>"
+```
+
+## Quality Evaluation
+
+`qualite.py` écrit `.travail/revue/quality_report.json` : les six scores et le score global, les problèmes triés par gravité, la couverture des objectifs, l'historique des révisions et les interventions humaines. Chaque score indique sa méthode (`deterministic`, `deterministic+llm_critic` ou `not_evaluated`) et ses explications : un score ne vient jamais seul d'un modèle de langage.
+
+```bash
+python3 scripts/qualite.py quality-report "<dossier du chapitre>" --etape livrables
+```
+
+## Benchmark
+
+[`benchmark/`](benchmark/README.md) contient dix cas synthétiques avec leur résultat attendu, et peut exécuter les mêmes cours en mode agent unique et en mode multi-agent. **Il mesure des indicateurs techniques et structurels, pas directement la qualité pédagogique.**
+
+```bash
+python3 benchmark/run.py verify
+```
+
+Pour comprendre le parcours sans compte ni modèle de langage, cet exemple simule les agents et utilise le vrai code :
+
+```bash
+python3 benchmark/parcours_mock.py
+```
+
+## Experimental Evaluation
+
+[`docs/methodology.md`](docs/methodology.md) présente la question de recherche, les hypothèses, le protocole et les menaces à la validité. [`human_evaluation/`](human_evaluation/README.md) prépare une évaluation par des enseignants. **Aucune comparaison réelle n'a encore été menée : ces hypothèses restent à tester, et rien ne montre à ce stade que l'architecture multi-agent ou la critique améliore les cours.**
 
 ## Niveaux et matières
 
