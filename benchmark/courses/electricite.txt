@@ -1,0 +1,13 @@
+# L'électricité
+
+## Le circuit
+Un circuit fermé permet le passage du courant électrique.
+
+## La tension
+La tension se mesure en volts avec un voltmètre.
+
+## L'intensité
+L'intensité se mesure en ampères avec un ampèremètre.
+
+## La puissance
+La puissance dépend de la tension et de l'intensité.

@@ -5,3 +5,7 @@ __pycache__/
 Thumbs.db
 ~$*
 .~lock.*#
+benchmark/outputs/*
+!benchmark/outputs/.gitkeep
+benchmark/reports/*
+!benchmark/reports/.gitkeep

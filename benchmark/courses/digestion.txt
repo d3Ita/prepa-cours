@@ -1,0 +1,9 @@
+# La digestion
+Le système digestif transforme les aliments en nutriments.
+
+## L'estomac
+L'estomac brasse les aliments et les mélange aux sucs digestifs.
+
+## L'intestin grêle
+L'intestin grêle absorbe les nutriments, qui passent dans le sang.
+La digestion complète dure environ 24 heures.
