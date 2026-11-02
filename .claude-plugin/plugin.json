@@ -1,7 +1,7 @@
 {
-  "name": "prof-cours",
-  "displayName": "Prof Cours",
-  "version": "0.5.0",
+  "name": "prepa-cours",
+  "displayName": "Prépa Cours",
+  "version": "0.5.1",
   "description": "Organise les cours par niveau, classe et chapitre, et adapte un cours Word, LibreOffice ou texte à la matière, aux heures et aux séances prévues : scénario minuté, diapos et QCM de 5 questions par séance, avec contrôle de cohérence et historique des versions.",
   "userConfig": {
     "dossier_cours": {
@@ -14,8 +14,8 @@
     "name": "KIKZILL",
     "url": "https://github.com/d3Ita"
   },
-  "homepage": "https://github.com/d3Ita/prof-cours#readme",
-  "repository": "https://github.com/d3Ita/prof-cours",
+  "homepage": "https://github.com/d3Ita/prepa-cours#readme",
+  "repository": "https://github.com/d3Ita/prepa-cours",
   "license": "MIT",
   "icon": "./.claude-plugin/icon.png",
   "keywords": ["enseignement", "education", "cours", "diapos", "powerpoint", "libreoffice", "evaluation", "qcm", "seances", "pedagogie"]

@@ -1,5 +1,5 @@
 {
-  "name": "prof-cours",
+  "name": "prepa-cours",
   "description": "Outils pour préparer un cours avec Claude : découpage en séances, scénarios, diapos, QCM et versions.",
   "owner": {
     "name": "KIKZILL",
@@ -7,7 +7,7 @@
   },
   "plugins": [
     {
-      "name": "prof-cours",
+      "name": "prepa-cours",
       "source": "./",
       "category": "education",
       "tags": ["enseignement", "cours", "diapos", "evaluation"]

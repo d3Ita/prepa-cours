@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 CATEGORIES = ("Cours", "Diapos", "QCM", "Evaluations", "Corrections")
-MARQUEUR = ".prof-cours"
+MARQUEUR = ".prepa-cours"
 INTERDITS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
 CHAPITRE = re.compile(r"Chapitre (\d+) - (.+)", re.IGNORECASE)
 

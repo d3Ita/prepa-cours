@@ -1,6 +1,6 @@
-# Prof Cours
+# Prépa Cours
 
-[![Tests](https://github.com/d3Ita/prof-cours/actions/workflows/tests.yml/badge.svg)](https://github.com/d3Ita/prof-cours/actions/workflows/tests.yml)
+[![Tests](https://github.com/d3Ita/prepa-cours/actions/workflows/tests.yml/badge.svg)](https://github.com/d3Ita/prepa-cours/actions/workflows/tests.yml)
 [![Licence : MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
 
 **Gardez tous vos cours bien rangés par niveau, classe et chapitre. Donnez un cours en Word, LibreOffice ou texte, indiquez la matière, vos heures et vos séances : récupérez pour chaque séance un scénario minuté, des diapos et un QCM de 5 questions, dans des fichiers que vous pouvez retoucher avec PowerPoint, Word ou LibreOffice.**
@@ -25,7 +25,7 @@ Dossier de cours/
             └── Corrections/  les corrigés
 ```
 
-Vous pouvez demander à tout moment : « montre-moi mes cours de Terminale », « range ces fichiers » ou « réutilise ce chapitre pour la Terminale 3 ». Le plugin vous montre son classement avant de ranger des fichiers existants, les copie par défaut et ne supprime rien. Vous pouvez aussi lancer `/prof-cours:organiser`.
+Vous pouvez demander à tout moment : « montre-moi mes cours de Terminale », « range ces fichiers » ou « réutilise ce chapitre pour la Terminale 3 ». Le plugin vous montre son classement avant de ranger des fichiers existants, les copie par défaut et ne supprime rien. Vous pouvez aussi lancer `/prepa-cours:organiser`.
 
 ## Comment ça marche
 
@@ -45,13 +45,13 @@ flowchart LR
 
 | Rôle | Ce qu'il fait |
 | --- | --- |
-| **Superviseur** (`/prof-cours:cours`) | Enchaîne les étapes, attend votre validation et contrôle la cohérence |
-| **Organisation** (`/prof-cours:organiser`) | Classe vos cours par niveau, classe et chapitre, et réutilise un chapitre pour une autre classe |
-| **Découpage** (`/prof-cours:decoupage`) | Adapte le cours à vos heures et à vos séances, ou réajuste un découpage existant |
+| **Superviseur** (`/prepa-cours:cours`) | Enchaîne les étapes, attend votre validation et contrôle la cohérence |
+| **Organisation** (`/prepa-cours:organiser`) | Classe vos cours par niveau, classe et chapitre, et réutilise un chapitre pour une autre classe |
+| **Découpage** (`/prepa-cours:decoupage`) | Adapte le cours à vos heures et à vos séances, ou réajuste un découpage existant |
 | **Scénariste** | Écrit le déroulé minuté de chaque séance, côté prof et côté élèves |
 | **Concepteur de diapos** | Crée les diapos et les notes du présentateur, avec le modèle de votre établissement si vous en avez un |
 | **Évaluateur** | Crée le QCM de 5 questions de chaque séance et son corrigé, et une évaluation finale si vous en voulez une |
-| **Versions** (`/prof-cours:versions`) | Sauvegarde, compare et restaure vos fichiers |
+| **Versions** (`/prepa-cours:versions`) | Sauvegarde, compare et restaure vos fichiers |
 
 ## Niveaux et matières
 
@@ -75,8 +75,8 @@ Le dossier [`exemples`](exemples) montre l'organisation et le format des fichier
 Il vous faut [Claude Code](https://code.claude.com/docs), [Python 3](https://www.python.org/downloads/) et [Git](https://git-scm.com/downloads). Dans Claude Code, tapez :
 
 ```text
-/plugin marketplace add d3Ita/prof-cours
-/plugin install prof-cours@prof-cours
+/plugin marketplace add d3Ita/prepa-cours
+/plugin install prepa-cours@prepa-cours
 ```
 
 Internet est nécessaire à la première génération de fichiers, pour installer `python-pptx` et `python-docx`. Le plugin peut vous demander votre dossier de cours à l'activation. Sinon, il vous le demandera à la première utilisation.
@@ -86,7 +86,7 @@ Internet est nécessaire à la première génération de fichiers, pour installe
 Indiquez votre document (`.docx`, `.odt` ou `.txt`), votre classe, votre chapitre et vos heures :
 
 ```text
-/prof-cours:cours mon-cours.docx Terminale 2, SVT, chapitre Génétique, 12 h en 6 séances de 2 h
+/prepa-cours:cours mon-cours.docx Terminale 2, SVT, chapitre Génétique, 12 h en 6 séances de 2 h
 ```
 
 Les séances peuvent aussi avoir des durées différentes : « 3 séances de 2 h, puis 2 séances d'1 h 30 ». Vous obtenez dans le dossier du chapitre :
@@ -105,7 +105,7 @@ Les mêmes fichiers sont créés pour chaque séance. Un dossier caché, `.trava
 
 Si vos heures changent en cours d'année, dites-le simplement, par exemple : « je n'ai plus que 4 séances ». Le plugin vous montre ce que cela change et ne refait que les séances concernées après votre accord.
 
-Pour vos versions, demandez simplement : « sauvegarde mon cours », « qu'est-ce qui a changé depuis hier ? » ou « reviens aux diapos de lundi ». Vous pouvez aussi lancer `/prof-cours:versions`.
+Pour vos versions, demandez simplement : « sauvegarde mon cours », « qu'est-ce qui a changé depuis hier ? » ou « reviens aux diapos de lundi ». Vous pouvez aussi lancer `/prepa-cours:versions`.
 
 Vos retouches sont protégées : le plugin n'écrase jamais un fichier existant sans vous le demander, et il sauvegarde avant de restaurer une ancienne version.
 
@@ -131,7 +131,7 @@ Vos retouches sont protégées : le plugin n'écrase jamais un fichier existant 
 
 ## Contribuer
 
-Les retours d'enseignants sont les plus précieux : [ouvrez une issue](https://github.com/d3Ita/prof-cours/issues) pour signaler un problème ou raconter ce qui vous manque.
+Les retours d'enseignants sont les plus précieux : [ouvrez une issue](https://github.com/d3Ita/prepa-cours/issues) pour signaler un problème ou raconter ce qui vous manque.
 
 ```bash
 pip install python-pptx==1.0.2 python-docx==1.2.0

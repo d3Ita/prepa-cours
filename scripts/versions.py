@@ -53,9 +53,9 @@ def sauver(message):
         return
     identite = []
     if not git("config", "user.name", check=False):
-        identite += ["-c", "user.name=Prof Cours"]
+        identite += ["-c", "user.name=Prépa Cours"]
     if not git("config", "user.email", check=False):
-        identite += ["-c", "user.email=prof-cours@localhost"]
+        identite += ["-c", "user.email=prepa-cours@localhost"]
     git(*identite, "commit", "-m", message)
     print(f"Sauvegardé : {message}")
 
